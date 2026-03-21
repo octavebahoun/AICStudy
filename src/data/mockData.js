@@ -1,0 +1,10 @@
+export const mockUsers = []
+export const mockCourses = []
+export const mockModules = []
+export const mockQuizzes = []
+export const mockForumPosts = []
+export const mockBadges = []
+export const mockCertificates = []
+export const chartData = []
+export const weeklyActivity = [0, 0, 0, 0, 0, 0, 0]
+export const weekDays = { fr: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] }
