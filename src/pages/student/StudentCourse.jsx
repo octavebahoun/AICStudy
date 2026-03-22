@@ -249,6 +249,42 @@ export function StudentCourseDetail() {
                 </div>
               ))
           )}
+          {course.quizzes && course.quizzes.length > 0 && (
+            <div
+              style={{
+                padding: "12px",
+                borderTop: "1px solid #E2E8F0",
+                marginTop: 16,
+              }}
+              onClick={() => navigate(`/student/quiz/${course.id}`)}
+              className="lesson-item active-lesson"
+            >
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: "#8B5CF6",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="quiz" size={11} color="white" />
+              </div>
+              <span style={{ fontWeight: 600 }}>
+                {lang === "fr"
+                  ? "Passer l'évaluation finale"
+                  : "Take Final Quiz"}
+              </span>
+              <Icon
+                name="chevronRight"
+                size={14}
+                color="#8B5CF6"
+                style={{ marginLeft: "auto" }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -416,6 +452,8 @@ export function StudentCourseReader() {
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson =
     currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+  const isLastLesson = currentIndex === allLessons.length - 1;
+  const quizId = course.quizzes && course.quizzes.length > 0 ? course.id : null;
 
   return (
     <div className="page-content fade-in">
@@ -530,10 +568,20 @@ export function StudentCourseReader() {
 
               <button
                 className="btn btn-primary"
-                disabled={!nextLesson}
-                onClick={() => nextLesson && setActiveLesson(nextLesson)}
+                disabled={!nextLesson && !quizId}
+                onClick={() => {
+                  if (nextLesson) setActiveLesson(nextLesson);
+                  else if (quizId) navigate(`/student/quiz/${quizId}`);
+                }}
               >
-                {t[lang].next} <Icon name="chevronRight" size={15} />
+                {nextLesson
+                  ? t[lang].next
+                  : quizId
+                    ? lang === "fr"
+                      ? "Passer au Quiz"
+                      : "Go to Quiz"
+                    : t[lang].next}
+                <Icon name="chevronRight" size={15} />
               </button>
             </div>
           </div>
@@ -627,6 +675,42 @@ export function StudentCourseReader() {
                     ))}
                 </div>
               ))}
+            {quizId && (
+              <div
+                className="lesson-item mt-4"
+                style={{
+                  background: "#8B5CF615",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                }}
+                onClick={() => navigate(`/student/quiz/${quizId}`)}
+              >
+                <div
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    background: "#8B5CF6",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon name="quiz" size={12} color="white" />
+                </div>
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}
+                >
+                  {lang === "fr" ? "Quiz final" : "Final Quiz"}
+                </span>
+                <Icon
+                  name="chevronRight"
+                  size={15}
+                  color="#8B5CF6"
+                  style={{ marginLeft: "auto" }}
+                />
+              </div>
+            )}
           </div>
 
           <div

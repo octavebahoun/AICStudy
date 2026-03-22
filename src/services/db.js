@@ -102,7 +102,7 @@ export const getStudentCourses = getStudentEnrollments
 export const getCourseDetails = async (courseId) => {
     const { data, error } = await supabase
         .from('courses')
-        .select('*, modules(*, lessons(*))')
+        .select('*, modules(*, lessons(*)), quizzes(*)')
         .eq('id', courseId)
         .single()
     if (error) throw error

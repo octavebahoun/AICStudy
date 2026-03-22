@@ -29,13 +29,24 @@ export function TeacherQuiz() {
   const [quizTitle, setQuizTitle] = useState("");
   const [passingScore, setPassingScore] = useState(70);
   const [timeLimit, setTimeLimit] = useState(30);
+  const [showAddQ, setShowAddQ] = useState(false);
+  const [newQ, setNewQ] = useState({
+    text: "",
+    options: ["", "", "", ""],
+    correct_index: 0,
+    explanation: "",
+  });
   const [addingQ, setAddingQ] = useState(false);
   const [editingQId, setEditingQId] = useState(null);
   const [aiCount, setAiCount] = useState(3);
+  const [activeTab, setActiveTab] = useState("questions");
+  const [attempts, setAttempts] = useState([]);
+  const [loadingAttempts, setLoadingAttempts] = useState(false);
 
   useEffect(() => {
     fetchQuiz();
-  }, [courseId]);
+    if (activeTab === "results") fetchAttempts();
+  }, [courseId, activeTab]);
 
   const fetchQuiz = async () => {
     setLoading(true);
@@ -70,6 +81,24 @@ export function TeacherQuiz() {
       console.error("Error fetching quiz:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAttempts = async () => {
+    if (!quiz) return;
+    setLoadingAttempts(true);
+    try {
+      const { data, error } = await supabase
+        .from("quiz_attempts")
+        .select("*, student:users(full_name, email)")
+        .eq("quiz_id", quiz.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAttempts(data || []);
+    } catch (err) {
+      console.error("Error fetching attempts:", err);
+    } finally {
+      setLoadingAttempts(false);
     }
   };
 
@@ -317,22 +346,346 @@ export function TeacherQuiz() {
         </button>
         <div>
           <h1 className="page-title">{quiz.title}</h1>
-          <p className="page-subtitle">
-            {lang === "fr" ? "Score de réussite" : "Passing score"}:{" "}
-            {quiz.passing_score}% · {(quiz.questions || []).length}{" "}
-            {t[lang].questions}
-          </p>
+          <div className="flex gap-4 mt-3">
+            {[
+              {
+                id: "questions",
+                label: lang === "fr" ? "Questions" : "Questions",
+              },
+              { id: "results", label: lang === "fr" ? "Résultats" : "Results" },
+              {
+                id: "settings",
+                label: lang === "fr" ? "Paramètres" : "Settings",
+              },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: "6px 0",
+                  fontSize: 14,
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  color: activeTab === tab.id ? "var(--primary)" : "#64748B",
+                  borderBottom:
+                    activeTab === tab.id
+                      ? "2px solid var(--primary)"
+                      : "2px solid transparent",
+                  background: "none",
+                  borderTop: "none",
+                  borderLeft: "none",
+                  borderRight: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="grid-2">
+      {activeTab === "questions" && (
+        <div className="grid-2">
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <div className="card-title" style={{ margin: 0 }}>
+                {t[lang].questions} ({(quiz.questions || []).length})
+              </div>
+              <button
+                className="btn btn-accent btn-sm"
+                onClick={() => {
+                  setEditingQId(null);
+                  setNewQ({
+                    text: "",
+                    options: ["", "", "", ""],
+                    correct_index: 0,
+                    explanation: "",
+                  });
+                  setShowAddQ(true);
+                }}
+              >
+                <Icon name="plus" size={13} />
+                {t[lang].addQuestion}
+              </button>
+            </div>
+            {/* Modal ajout/edit question */}
+            {showAddQ && (
+              <div
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 10,
+                  padding: 16,
+                  marginBottom: 12,
+                }}
+              >
+                <div className="card-title" style={{ fontSize: 14 }}>
+                  {editingQId
+                    ? lang === "fr"
+                      ? "Modifier la question"
+                      : "Edit Question"
+                    : lang === "fr"
+                      ? "Nouvelle question"
+                      : "New Question"}
+                </div>
+                <div className="input-group">
+                  <label className="input-label">
+                    {lang === "fr" ? "Question" : "Question"}
+                  </label>
+                  <input
+                    className="input"
+                    value={newQ.text}
+                    onChange={(e) => setNewQ({ ...newQ, text: e.target.value })}
+                    placeholder={
+                      lang === "fr"
+                        ? "Texte de la question..."
+                        : "Question text..."
+                    }
+                  />
+                </div>
+                {newQ.options.map((opt, oi) => (
+                  <div className="input-group" key={oi}>
+                    <label
+                      className="input-label"
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <input
+                        type="radio"
+                        name="correct"
+                        checked={newQ.correct_index === oi}
+                        onChange={() => setNewQ({ ...newQ, correct_index: oi })}
+                      />
+                      {["A", "B", "C", "D"][oi]}.
+                    </label>
+                    <input
+                      className="input"
+                      value={opt}
+                      onChange={(e) => {
+                        const opts = [...newQ.options];
+                        opts[oi] = e.target.value;
+                        setNewQ({ ...newQ, options: opts });
+                      }}
+                      placeholder={`Option ${["A", "B", "C", "D"][oi]}`}
+                    />
+                  </div>
+                ))}
+                <div className="input-group">
+                  <label className="input-label">
+                    {lang === "fr"
+                      ? "Explication (optionnel)"
+                      : "Explanation (optional)"}
+                  </label>
+                  <input
+                    className="input"
+                    value={newQ.explanation}
+                    onChange={(e) =>
+                      setNewQ({ ...newQ, explanation: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSaveQuestion}
+                    disabled={addingQ}
+                  >
+                    {addingQ ? (
+                      <Spinner />
+                    ) : lang === "fr" ? (
+                      "Enregistrer"
+                    ) : (
+                      "Save"
+                    )}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowAddQ(false)}
+                  >
+                    {lang === "fr" ? "Annuler" : "Cancel"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(quiz.questions || []).length === 0 ? (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#94A3B8",
+                  padding: 20,
+                  fontSize: 13,
+                }}
+              >
+                {lang === "fr"
+                  ? "Aucune question. Cliquez sur + ou utilisez l'IA !"
+                  : "No questions. Click + or use AI!"}
+              </p>
+            ) : (
+              (quiz.questions || []).map((q, i) => (
+                <div
+                  key={q.id || i}
+                  style={{
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 8,
+                  }}
+                >
+                  <div className="flex justify-between mb-2">
+                    <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>
+                      Q{i + 1}. {q.text}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        className="btn-icon"
+                        onClick={() => handleEditQuestion(q)}
+                      >
+                        <Icon name="edit" size={14} color="var(--primary)" />
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => handleDeleteQuestion(q.id)}
+                      >
+                        <Icon name="trash" size={14} color="#EF4444" />
+                      </button>
+                    </div>
+                  </div>
+                  {(q.options || []).map((o, oi) => (
+                    <div
+                      key={oi}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 8px",
+                        borderRadius: 4,
+                        background:
+                          oi === q.correct_index ? "#D1FAE5" : "#F8FAFC",
+                        color: oi === q.correct_index ? "#065F46" : "#64748B",
+                        marginBottom: 2,
+                      }}
+                    >
+                      {oi === q.correct_index ? "✅" : "○"} {o}
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+
+          <AIPanel
+            title={t[lang].generateQuiz}
+            onAction={generateQuiz}
+            actionLabel={t[lang].generateQuiz}
+            loading={aiLoading}
+          >
+            <p style={{ fontSize: 13, color: "#1E40AF", marginBottom: 12 }}>
+              {lang === "fr"
+                ? "Générez des questions depuis le contenu du cours."
+                : "Generate questions from course content."}
+            </p>
+
+            <div className="input-group" style={{ maxWidth: 200 }}>
+              <label className="input-label">
+                {lang === "fr" ? "Nombre de questions" : "Number of questions"}
+              </label>
+              <input
+                type="number"
+                className="input"
+                min={1}
+                max={10}
+                value={aiCount}
+                onChange={(e) => setAiCount(parseInt(e.target.value) || 1)}
+              />
+            </div>
+
+            {aiQuestions && (
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 13,
+                  lineHeight: 1.7,
+                  color: "#374151",
+                  background: "white",
+                  padding: 10,
+                  borderRadius: 6,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {aiQuestions}
+              </div>
+            )}
+          </AIPanel>
+        </div>
+      )}
+
+      {activeTab === "results" && (
         <div className="card">
+          <div className="card-title">
+            👨‍🎓 {lang === "fr" ? "Résultats des Étudiants" : "Student Results"}
+          </div>
+          {loadingAttempts ? (
+            <Spinner dark />
+          ) : attempts.length === 0 ? (
+            <p style={{ padding: 20, textAlign: "center", color: "#64748B" }}>
+              {lang === "fr"
+                ? "Aucune tentative enregistrée."
+                : "No attempts recorded."}
+            </p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{lang === "fr" ? "Étudiant" : "Student"}</th>
+                    <th>Score</th>
+                    <th>{lang === "fr" ? "Statut" : "Status"}</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attempts.map((a) => (
+                    <tr key={a.id}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>
+                          {a.student?.full_name}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#94A3B8" }}>
+                          {a.student?.email}
+                        </div>
+                      </td>
+                      <td style={{ fontWeight: 700, fontSize: 16 }}>
+                        {a.score}%
+                      </td>
+                      <td>
+                        <Badge type={a.passed ? "success" : "danger"}>
+                          {a.passed
+                            ? lang === "fr"
+                              ? "Réussi"
+                              : "Passed"
+                            : lang === "fr"
+                              ? "Échoué"
+                              : "Failed"}
+                        </Badge>
+                      </td>
+                      <td style={{ fontSize: 12, color: "#64748B" }}>
+                        {new Date(a.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="card" style={{ maxWidth: 600 }}>
           <div
             className="card-title"
             style={{ display: "flex", alignItems: "center", gap: 8 }}
           >
             <Icon name="settings" size={16} color="var(--primary)" />
-            {lang === "fr" ? "Paramètres" : "Settings"}
+            {lang === "fr" ? "Paramètres du Quiz" : "Quiz Settings"}
           </div>
           <div className="input-group">
             <label className="input-label">{t[lang].title}</label>
@@ -373,236 +726,7 @@ export function TeacherQuiz() {
             {saveLoading ? <Spinner /> : t[lang].save}
           </button>
         </div>
-
-        <div className="card">
-          <div className="flex justify-between items-center mb-4">
-            <div className="card-title" style={{ margin: 0 }}>
-              {t[lang].questions} ({(quiz.questions || []).length})
-            </div>
-            <button
-              className="btn btn-accent btn-sm"
-              onClick={() => {
-                setEditingQId(null);
-                setNewQ({
-                  text: "",
-                  options: ["", "", "", ""],
-                  correct_index: 0,
-                  explanation: "",
-                });
-                setShowAddQ(true);
-              }}
-            >
-              <Icon name="plus" size={13} />
-              {t[lang].addQuestion}
-            </button>
-          </div>
-          {/* Modal ajout/edit question */}
-          {showAddQ && (
-            <div
-              style={{
-                background: "#F8FAFC",
-                border: "1px solid #E2E8F0",
-                borderRadius: 10,
-                padding: 16,
-                marginBottom: 12,
-              }}
-            >
-              <div className="card-title" style={{ fontSize: 14 }}>
-                {editingQId
-                  ? lang === "fr"
-                    ? "Modifier la question"
-                    : "Edit Question"
-                  : lang === "fr"
-                    ? "Nouvelle question"
-                    : "New Question"}
-              </div>
-              <div className="input-group">
-                <label className="input-label">
-                  {lang === "fr" ? "Question" : "Question"}
-                </label>
-                <input
-                  className="input"
-                  value={newQ.text}
-                  onChange={(e) => setNewQ({ ...newQ, text: e.target.value })}
-                  placeholder={
-                    lang === "fr"
-                      ? "Texte de la question..."
-                      : "Question text..."
-                  }
-                />
-              </div>
-              {newQ.options.map((opt, oi) => (
-                <div className="input-group" key={oi}>
-                  <label
-                    className="input-label"
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <input
-                      type="radio"
-                      name="correct"
-                      checked={newQ.correct_index === oi}
-                      onChange={() => setNewQ({ ...newQ, correct_index: oi })}
-                    />
-                    {["A", "B", "C", "D"][oi]}.
-                  </label>
-                  <input
-                    className="input"
-                    value={opt}
-                    onChange={(e) => {
-                      const opts = [...newQ.options];
-                      opts[oi] = e.target.value;
-                      setNewQ({ ...newQ, options: opts });
-                    }}
-                    placeholder={`Option ${["A", "B", "C", "D"][oi]}`}
-                  />
-                </div>
-              ))}
-              <div className="input-group">
-                <label className="input-label">
-                  {lang === "fr"
-                    ? "Explication (optionnel)"
-                    : "Explanation (optional)"}
-                </label>
-                <input
-                  className="input"
-                  value={newQ.explanation}
-                  onChange={(e) =>
-                    setNewQ({ ...newQ, explanation: e.target.value })
-                  }
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={handleSaveQuestion}
-                  disabled={addingQ}
-                >
-                  {addingQ ? (
-                    <Spinner />
-                  ) : lang === "fr" ? (
-                    "Enregistrer"
-                  ) : (
-                    "Save"
-                  )}
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setShowAddQ(false)}
-                >
-                  {lang === "fr" ? "Annuler" : "Cancel"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {(quiz.questions || []).length === 0 ? (
-            <p
-              style={{
-                textAlign: "center",
-                color: "#94A3B8",
-                padding: 20,
-                fontSize: 13,
-              }}
-            >
-              {lang === "fr"
-                ? "Aucune question. Cliquez sur + ou utilisez l'IA !"
-                : "No questions. Click + or use AI!"}
-            </p>
-          ) : (
-            (quiz.questions || []).map((q, i) => (
-              <div
-                key={q.id || i}
-                style={{
-                  border: "1px solid #E2E8F0",
-                  borderRadius: 8,
-                  padding: 12,
-                  marginBottom: 8,
-                }}
-              >
-                <div className="flex justify-between mb-2">
-                  <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>
-                    Q{i + 1}. {q.text}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      className="btn-icon"
-                      onClick={() => handleEditQuestion(q)}
-                    >
-                      <Icon name="edit" size={14} color="var(--primary)" />
-                    </button>
-                    <button
-                      className="btn-icon"
-                      onClick={() => handleDeleteQuestion(q.id)}
-                    >
-                      <Icon name="trash" size={14} color="#EF4444" />
-                    </button>
-                  </div>
-                </div>
-                {(q.options || []).map((o, oi) => (
-                  <div
-                    key={oi}
-                    style={{
-                      fontSize: 12,
-                      padding: "4px 8px",
-                      borderRadius: 4,
-                      background:
-                        oi === q.correct_index ? "#D1FAE5" : "#F8FAFC",
-                      color: oi === q.correct_index ? "#065F46" : "#64748B",
-                      marginBottom: 2,
-                    }}
-                  >
-                    {oi === q.correct_index ? "✅" : "○"} {o}
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <AIPanel
-        title={t[lang].generateQuiz}
-        onAction={generateQuiz}
-        actionLabel={t[lang].generateQuiz}
-        loading={aiLoading}
-      >
-        <p style={{ fontSize: 13, color: "#1E40AF", marginBottom: 12 }}>
-          {lang === "fr"
-            ? "Générez des questions depuis le contenu du cours."
-            : "Generate questions from course content."}
-        </p>
-
-        <div className="input-group" style={{ maxWidth: 200 }}>
-          <label className="input-label">
-            {lang === "fr" ? "Nombre de questions" : "Number of questions"}
-          </label>
-          <input
-            type="number"
-            className="input"
-            min={1}
-            max={10}
-            value={aiCount}
-            onChange={(e) => setAiCount(parseInt(e.target.value) || 1)}
-          />
-        </div>
-
-        {aiQuestions && (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 13,
-              lineHeight: 1.7,
-              color: "#374151",
-              background: "white",
-              padding: 10,
-              borderRadius: 6,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {aiQuestions}
-          </div>
-        )}
-      </AIPanel>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ export default function StudentQuiz() {
   const [finished, setFinished] = useState(false);
   const [aiExplanation, setAiExplanation] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [savingResult, setSavingResult] = useState(false);
 
   useEffect(() => {
     fetchQuiz();
@@ -72,8 +73,33 @@ export default function StudentQuiz() {
     }
   };
 
+  const saveAttempt = async (finalScore) => {
+    if (!user || !quiz) return;
+    setSavingResult(true);
+    try {
+      const pct = Math.round((finalScore / quiz.questions.length) * 100);
+      const passed = pct >= quiz.passing_score;
+      await supabase.from("quiz_attempts").insert({
+        student_id: user.id,
+        quiz_id: quiz.id,
+        course_id: courseId,
+        score: pct,
+        passed: passed,
+        created_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Error saving quiz attempt:", err);
+    } finally {
+      setSavingResult(false);
+    }
+  };
+
   const handleNext = () => {
     if (currentQ + 1 >= quiz.questions.length) {
+      const finalScore = answers.filter(
+        (a, i) => a === quiz.questions[i]?.correct_index,
+      ).length;
+      saveAttempt(finalScore);
       setFinished(true);
     } else {
       setCurrentQ(currentQ + 1);
