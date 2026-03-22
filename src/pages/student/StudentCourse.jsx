@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useApp } from "../../context/AppContext";
 import {
   Icon,
@@ -17,6 +18,14 @@ import {
 import { callAI, aiPrompts } from "../../services/ai";
 import { supabase } from "../../services/supabase";
 import t from "../../data/translations";
+
+const getYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp =
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+};
 
 export function StudentCourseDetail() {
   const { state } = useApp();
@@ -445,7 +454,45 @@ export function StudentCourseReader() {
             </h2>
             <div className="prose">
               {activeLesson?.content ? (
-                <ReactMarkdown>{activeLesson.content}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ node, ...props }) => {
+                      const ytId = getYouTubeId(props.href);
+                      if (ytId) {
+                        return (
+                          <div
+                            className="video-container"
+                            style={{ margin: "20px 0" }}
+                          >
+                            <iframe
+                              width="100%"
+                              height="315"
+                              src={`https://www.youtube.com/embed/${ytId}`}
+                              title="YouTube video player"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              style={{
+                                borderRadius: 8,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                              }}
+                            ></iframe>
+                          </div>
+                        );
+                      }
+                      return (
+                        <a
+                          {...props}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        />
+                      );
+                    },
+                  }}
+                >
+                  {activeLesson.content}
+                </ReactMarkdown>
               ) : (
                 <p style={{ color: "#94A3B8", fontStyle: "italic" }}>
                   {lang === "fr"
