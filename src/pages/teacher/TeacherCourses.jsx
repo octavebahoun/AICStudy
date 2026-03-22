@@ -172,8 +172,8 @@ export function TeacherCourseEditor() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlan, setAiPlan] = useState("");
   const [aiDescLoading, setAiDescLoading] = useState(false);
-  // Lesson management
   const [selectedModule, setSelectedModule] = useState(null);
+  const [editingLessonId, setEditingLessonId] = useState(null); // Track if we're editing a lesson
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [lessonForm, setLessonForm] = useState({
     title: "",
@@ -233,6 +233,24 @@ export function TeacherCourseEditor() {
     }
   };
 
+  const handleDeleteCourse = async () => {
+    if (
+      !confirm(
+        lang === "fr"
+          ? "Supprimer ce cours définitivement ?"
+          : "Permanently delete this course?",
+      )
+    )
+      return;
+    try {
+      const { error } = await supabase.from("courses").delete().eq("id", id);
+      if (error) throw error;
+      navigate("/teacher/courses");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const handleAddModule = async () => {
     const title = prompt(lang === "fr" ? "Titre du module :" : "Module title:");
     if (!title) return;
@@ -250,6 +268,30 @@ export function TeacherCourseEditor() {
 
       if (error) throw error;
       setModules([...modules, { ...data, lessons: [] }]);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleEditModule = async (mId, oldTitle) => {
+    const title = prompt(
+      lang === "fr" ? "Nouveau titre du module :" : "New module title:",
+      oldTitle,
+    );
+    if (!title || title === oldTitle) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("modules")
+        .update({ title })
+        .eq("id", mId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setModules(
+        modules.map((m) => (m.id === mId ? { ...m, title: data.title } : m)),
+      );
     } catch (err) {
       alert(err.message);
     }
@@ -273,36 +315,80 @@ export function TeacherCourseEditor() {
     }
   };
 
-  const handleAddLesson = async () => {
+  const handleSaveLesson = async () => {
     if (!lessonForm.title || !selectedModule) return;
     try {
-      const { data, error } = await supabase
-        .from("lessons")
-        .insert({
-          module_id: selectedModule.id,
-          title: lessonForm.title,
-          content: lessonForm.content,
-          type: lessonForm.type,
-          order: (selectedModule.lessons || []).length + 1,
-        })
-        .select()
-        .single();
+      if (editingLessonId) {
+        // Update existing lesson
+        const { data, error } = await supabase
+          .from("lessons")
+          .update({
+            title: lessonForm.title,
+            content: lessonForm.content,
+            type: lessonForm.type,
+          })
+          .eq("id", editingLessonId)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Update local state
-      const updatedModules = modules.map((m) => {
-        if (m.id === selectedModule.id) {
-          return { ...m, lessons: [...(m.lessons || []), data] };
-        }
-        return m;
-      });
-      setModules(updatedModules);
+        setModules(
+          modules.map((m) => {
+            if (m.id === selectedModule.id) {
+              return {
+                ...m,
+                lessons: m.lessons.map((l) =>
+                  l.id === editingLessonId ? data : l,
+                ),
+              };
+            }
+            return m;
+          }),
+        );
+      } else {
+        // Create new lesson
+        const { data, error } = await supabase
+          .from("lessons")
+          .insert({
+            module_id: selectedModule.id,
+            title: lessonForm.title,
+            content: lessonForm.content,
+            type: lessonForm.type,
+            order: (selectedModule.lessons || []).length + 1,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Update local state
+        const updatedModules = modules.map((m) => {
+          if (m.id === selectedModule.id) {
+            return { ...m, lessons: [...(m.lessons || []), data] };
+          }
+          return m;
+        });
+        setModules(updatedModules);
+      }
+
       setLessonForm({ title: "", content: "", type: "text" });
+      setEditingLessonId(null);
       setShowLessonModal(false);
     } catch (err) {
       alert(err.message);
     }
+  };
+
+  const handleEditLesson = (lesson, module) => {
+    setSelectedModule(module);
+    setEditingLessonId(lesson.id);
+    setLessonForm({
+      title: lesson.title,
+      content: lesson.content || "",
+      type: lesson.type || "text",
+    });
+    setShowLessonModal(true);
   };
 
   const handleDeleteLesson = async (lId, mId) => {
@@ -551,6 +637,17 @@ export function TeacherCourseEditor() {
                   </>
                 )}
               </button>
+              {!isNew && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ color: "#EF4444" }}
+                  onClick={handleDeleteCourse}
+                >
+                  <Icon name="trash" size={15} />
+                  {lang === "fr" ? "Supprimer" : "Delete"}
+                </button>
+              )}
             </div>
           </form>
 
@@ -647,10 +744,25 @@ export function TeacherCourseEditor() {
                       </span>
                       <div className="flex gap-2">
                         <button
+                          className="btn-icon"
+                          title={
+                            lang === "fr" ? "Modifier le titre" : "Edit title"
+                          }
+                          onClick={() => handleEditModule(m.id, m.title)}
+                        >
+                          <Icon name="edit" size={14} color="var(--primary)" />
+                        </button>
+                        <button
                           className="btn btn-ghost btn-sm"
                           style={{ padding: "4px 8px" }}
                           onClick={() => {
                             setSelectedModule(m);
+                            setEditingLessonId(null);
+                            setLessonForm({
+                              title: "",
+                              content: "",
+                              type: "text",
+                            });
                             setShowLessonModal(true);
                           }}
                         >
@@ -693,13 +805,26 @@ export function TeacherCourseEditor() {
                             <span style={{ fontSize: 13, color: "#475569" }}>
                               {l.type === "video" ? "📹" : "📄"} {l.title}
                             </span>
-                            <button
-                              className="btn-icon opacity-0 group-hover:opacity-100"
-                              style={{ padding: 2 }}
-                              onClick={() => handleDeleteLesson(l.id, m.id)}
-                            >
-                              <Icon name="trash" size={12} color="#EF4444" />
-                            </button>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                              <button
+                                className="btn-icon"
+                                style={{ padding: 2 }}
+                                onClick={() => handleEditLesson(l, m)}
+                              >
+                                <Icon
+                                  name="edit"
+                                  size={12}
+                                  color="var(--primary)"
+                                />
+                              </button>
+                              <button
+                                className="btn-icon"
+                                style={{ padding: 2 }}
+                                onClick={() => handleDeleteLesson(l.id, m.id)}
+                              >
+                                <Icon name="trash" size={12} color="#EF4444" />
+                              </button>
+                            </div>
                           </div>
                         ))
                       )}
@@ -735,7 +860,13 @@ export function TeacherCourseEditor() {
                     }}
                   >
                     <div className="card-title">
-                      {lang === "fr" ? "Ajouter une leçon" : "Add Lesson"}
+                      {editingLessonId
+                        ? lang === "fr"
+                          ? "Modifier la leçon"
+                          : "Edit Lesson"
+                        : lang === "fr"
+                          ? "Ajouter une leçon"
+                          : "Add Lesson"}
                     </div>
                     <div className="input-group">
                       <label className="input-label">{t[lang].title}</label>
@@ -841,7 +972,7 @@ export function TeacherCourseEditor() {
                       </button>
                       <button
                         className="btn btn-primary"
-                        onClick={handleAddLesson}
+                        onClick={handleSaveLesson}
                       >
                         {lang === "fr" ? "Enregistrer" : "Save"}
                       </button>

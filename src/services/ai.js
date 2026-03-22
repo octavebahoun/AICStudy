@@ -30,8 +30,20 @@ export const aiPrompts = {
   generateCoursePlan: (title, level, lang) =>
     `Génère un plan de cours structuré pour : "${title}" (niveau: ${level}). Propose 4-5 modules avec 3-4 leçons chacun. Format concis avec tirets. Réponds en ${lang === 'fr' ? 'français' : 'anglais'}.`,
 
-  generateQuiz: (courseTitle, lang) =>
-    `Génère 3 questions de quiz QCM sur "${courseTitle}". Pour chaque question : texte, 4 options (A/B/C/D), réponse correcte, explication courte. Réponds en ${lang === 'fr' ? 'français' : 'anglais'}.`,
+  generateQuiz: (courseTitle, count, lang) =>
+    `Génère ${count} questions de quiz QCM pour le cours "${courseTitle}". 
+    Chaque question doit avoir exactement 4 options. 
+    RETOURNE UNIQUEMENT UN TABLEAU JSON au format suivant, sans autre texte avant ou après :
+    [
+      {
+        "text": "L'énoncé de la question",
+        "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+        "correct_index": 0,
+        "explanation": "Une explication pédagogique concise"
+      }
+    ]
+    L'index correct (correct_index) doit être entre 0 et 3.
+    Réponds en ${lang === 'fr' ? 'français' : 'anglais'}.`,
 
   generateCourseDescription: (title, level, lang) =>
     `Écris une description accrocheuse (3-4 phrases) pour un cours intitulé "${title}" de niveau ${level}. Réponds en ${lang === 'fr' ? 'français' : 'anglais'}.`,

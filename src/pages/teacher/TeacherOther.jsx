@@ -29,15 +29,9 @@ export function TeacherQuiz() {
   const [quizTitle, setQuizTitle] = useState("");
   const [passingScore, setPassingScore] = useState(70);
   const [timeLimit, setTimeLimit] = useState(30);
-  // Add question modal state
-  const [showAddQ, setShowAddQ] = useState(false);
-  const [newQ, setNewQ] = useState({
-    text: "",
-    options: ["", "", "", ""],
-    correct_index: 0,
-    explanation: "",
-  });
   const [addingQ, setAddingQ] = useState(false);
+  const [editingQId, setEditingQId] = useState(null);
+  const [aiCount, setAiCount] = useState(3);
 
   useEffect(() => {
     fetchQuiz();
@@ -131,39 +125,71 @@ export function TeacherQuiz() {
     }
   };
 
-  const handleAddQuestion = async () => {
+  const handleSaveQuestion = async () => {
     if (!newQ.text.trim() || newQ.options.some((o) => !o.trim())) {
       alert(lang === "fr" ? "Remplissez tous les champs." : "Fill all fields.");
       return;
     }
     setAddingQ(true);
     try {
-      const { data, error } = await supabase
-        .from("questions")
-        .insert({
-          quiz_id: quiz.id,
-          text: newQ.text,
-          options: newQ.options,
-          correct_index: newQ.correct_index,
-          explanation: newQ.explanation,
-          order: (quiz.questions || []).length + 1,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      setQuiz((q) => ({ ...q, questions: [...(q.questions || []), data] }));
+      if (editingQId) {
+        const { data, error } = await supabase
+          .from("questions")
+          .update({
+            text: newQ.text,
+            options: newQ.options,
+            correct_index: newQ.correct_index,
+            explanation: newQ.explanation,
+          })
+          .eq("id", editingQId)
+          .select()
+          .single();
+        if (error) throw error;
+        setQuiz((q) => ({
+          ...q,
+          questions: q.questions.map((x) => (x.id === editingQId ? data : x)),
+        }));
+      } else {
+        const { data, error } = await supabase
+          .from("questions")
+          .insert({
+            quiz_id: quiz.id,
+            text: newQ.text,
+            options: newQ.options,
+            correct_index: newQ.correct_index,
+            explanation: newQ.explanation,
+            order: (quiz.questions || []).length + 1,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        setQuiz((q) => ({ ...q, questions: [...(q.questions || []), data] }));
+      }
+
       setNewQ({
         text: "",
         options: ["", "", "", ""],
         correct_index: 0,
         explanation: "",
       });
+      setEditingQId(null);
       setShowAddQ(false);
     } catch (err) {
       alert(err.message);
     } finally {
       setAddingQ(false);
     }
+  };
+
+  const handleEditQuestion = (q) => {
+    setEditingQId(q.id);
+    setNewQ({
+      text: q.text,
+      options: [...q.options],
+      correct_index: q.correct_index,
+      explanation: q.explanation || "",
+    });
+    setShowAddQ(true);
   };
 
   const handleDeleteQuestion = async (qId) => {
@@ -182,14 +208,69 @@ export function TeacherQuiz() {
   };
 
   const generateQuiz = async () => {
-    if (!course) return;
+    if (!course || !quiz) return;
     setAiLoading(true);
-    const result = await callAI(
-      aiPrompts.generateQuiz(course.title, lang),
-      lang,
-    );
-    setAiQuestions(result);
-    setAiLoading(false);
+    setAiQuestions("");
+    try {
+      const result = await callAI(
+        aiPrompts.generateQuiz(course.title, aiCount, lang),
+        lang,
+      );
+
+      // Attempt to parse JSON
+      const jsonStr = result.includes("[")
+        ? result.substring(result.indexOf("["), result.lastIndexOf("]") + 1)
+        : result;
+      const questionsData = JSON.parse(jsonStr);
+
+      if (Array.isArray(questionsData)) {
+        // Enregistrer les questions une à une
+        const newQuestions = [];
+        let lastOrder = (quiz.questions || []).length;
+
+        for (const qData of questionsData) {
+          lastOrder++;
+          const { data, error } = await supabase
+            .from("questions")
+            .insert({
+              quiz_id: quiz.id,
+              text: qData.text,
+              options: qData.options,
+              correct_index: qData.correct_index,
+              explanation: qData.explanation || "",
+              order: lastOrder,
+            })
+            .select()
+            .single();
+
+          if (!error && data) {
+            newQuestions.push(data);
+          }
+        }
+
+        setQuiz((q) => ({
+          ...q,
+          questions: [...(q.questions || []), ...newQuestions],
+        }));
+
+        alert(
+          lang === "fr"
+            ? `${newQuestions.length} questions générées et ajoutées !`
+            : `${newQuestions.length} questions generated and added!`,
+        );
+      } else {
+        throw new Error("Invalid format");
+      }
+    } catch (err) {
+      console.error("Error generating/saving AI quiz:", err);
+      alert(
+        lang === "fr"
+          ? "Erreur lors de la génération. Essayez avec moins de questions."
+          : "Error during generation. Try with fewer questions.",
+      );
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   if (loading)
@@ -300,14 +381,22 @@ export function TeacherQuiz() {
             </div>
             <button
               className="btn btn-accent btn-sm"
-              onClick={() => setShowAddQ(true)}
+              onClick={() => {
+                setEditingQId(null);
+                setNewQ({
+                  text: "",
+                  options: ["", "", "", ""],
+                  correct_index: 0,
+                  explanation: "",
+                });
+                setShowAddQ(true);
+              }}
             >
               <Icon name="plus" size={13} />
               {t[lang].addQuestion}
             </button>
           </div>
-
-          {/* Modal ajout question */}
+          {/* Modal ajout/edit question */}
           {showAddQ && (
             <div
               style={{
@@ -318,6 +407,15 @@ export function TeacherQuiz() {
                 marginBottom: 12,
               }}
             >
+              <div className="card-title" style={{ fontSize: 14 }}>
+                {editingQId
+                  ? lang === "fr"
+                    ? "Modifier la question"
+                    : "Edit Question"
+                  : lang === "fr"
+                    ? "Nouvelle question"
+                    : "New Question"}
+              </div>
               <div className="input-group">
                 <label className="input-label">
                   {lang === "fr" ? "Question" : "Question"}
@@ -376,10 +474,16 @@ export function TeacherQuiz() {
               <div className="flex gap-2">
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={handleAddQuestion}
+                  onClick={handleSaveQuestion}
                   disabled={addingQ}
                 >
-                  {addingQ ? <Spinner /> : lang === "fr" ? "Ajouter" : "Add"}
+                  {addingQ ? (
+                    <Spinner />
+                  ) : lang === "fr" ? (
+                    "Enregistrer"
+                  ) : (
+                    "Save"
+                  )}
                 </button>
                 <button
                   className="btn btn-ghost btn-sm"
@@ -419,12 +523,20 @@ export function TeacherQuiz() {
                   <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>
                     Q{i + 1}. {q.text}
                   </span>
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleDeleteQuestion(q.id)}
-                  >
-                    <Icon name="trash" size={14} color="#EF4444" />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleEditQuestion(q)}
+                    >
+                      <Icon name="edit" size={14} color="var(--primary)" />
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleDeleteQuestion(q.id)}
+                    >
+                      <Icon name="trash" size={14} color="#EF4444" />
+                    </button>
+                  </div>
                 </div>
                 {(q.options || []).map((o, oi) => (
                   <div
@@ -454,11 +566,26 @@ export function TeacherQuiz() {
         actionLabel={t[lang].generateQuiz}
         loading={aiLoading}
       >
-        <p style={{ fontSize: 13, color: "#1E40AF" }}>
+        <p style={{ fontSize: 13, color: "#1E40AF", marginBottom: 12 }}>
           {lang === "fr"
             ? "Générez des questions depuis le contenu du cours."
             : "Generate questions from course content."}
         </p>
+
+        <div className="input-group" style={{ maxWidth: 200 }}>
+          <label className="input-label">
+            {lang === "fr" ? "Nombre de questions" : "Number of questions"}
+          </label>
+          <input
+            type="number"
+            className="input"
+            min={1}
+            max={10}
+            value={aiCount}
+            onChange={(e) => setAiCount(parseInt(e.target.value) || 1)}
+          />
+        </div>
+
         {aiQuestions && (
           <div
             style={{

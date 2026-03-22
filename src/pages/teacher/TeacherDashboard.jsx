@@ -159,6 +159,16 @@ export default function TeacherDashboard() {
                     {c.completion_rate || 0}%
                   </div>
                 </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: "6px" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/teacher/courses/${c.id}`);
+                  }}
+                >
+                  <Icon name="edit" size={14} />
+                </button>
               </div>
             ))
           )}
