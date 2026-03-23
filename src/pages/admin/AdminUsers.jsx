@@ -50,9 +50,6 @@ export default function AdminUsers() {
   const roleBg = { admin: "#1E3A5F", teacher: "#8B5CF6", student: "#10B981" };
 
   const addUser = async () => {
-    // In real Supabase, we should use auth.admin.createUser if we have a service role
-    // or just direct the admin to a "register" flow.
-    // For now, we'll suggest using registration.
     alert(
       lang === "fr"
         ? "Utilisez la page d'inscription pour ajouter un utilisateur avec un mot de passe."
@@ -253,3 +250,4 @@ export default function AdminUsers() {
     </div>
   );
 }
+//Semaine 2

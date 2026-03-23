@@ -25,7 +25,7 @@ export function TeacherQuiz() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiQuestions, setAiQuestions] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
-  // Controlled quiz settings
+  // Controlle des quizs
   const [quizTitle, setQuizTitle] = useState("");
   const [passingScore, setPassingScore] = useState(70);
   const [timeLimit, setTimeLimit] = useState(30);
@@ -246,14 +246,14 @@ export function TeacherQuiz() {
         lang,
       );
 
-      // Attempt to parse JSON
+      // je parse le json ici
       const jsonStr = result.includes("[")
         ? result.substring(result.indexOf("["), result.lastIndexOf("]") + 1)
         : result;
       const questionsData = JSON.parse(jsonStr);
 
       if (Array.isArray(questionsData)) {
-        // Enregistrer les questions une à une
+        // ici j'enregistrer les questions une à une
         const newQuestions = [];
         let lastOrder = (quiz.questions || []).length;
 
@@ -1101,3 +1101,6 @@ export function TeacherProfile() {
     </div>
   );
 }
+
+//semaine3
+// les svg sont encore a maitriser

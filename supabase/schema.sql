@@ -1,7 +1,5 @@
--- AiC Study — Schéma Supabase
--- Exécutez ce script dans l'éditeur SQL de votre projet Supabase
+-- AiC Study — Schéma Supabase générée par ia 
 
--- ── Extensions ──────────────────────────────────────────────
 create extension if not exists "uuid-ossp";
 
 -- ── Users (profil public lié à auth.users) ──────────────────

@@ -4,16 +4,22 @@ Plateforme de formation en ligne complète avec 3 rôles (Admin, Formateur, Étu
 
 ## 🚀 Démarrage rapide
 
+le readme n'est pas long j'ai pas envie de beaucouo ecrire
+
 ### 1. Installer les dépendances
+
 ```bash
 npm install
 ```
 
 ### 2. Configurer l'environnement
+
 ```bash
 cp .env.example .env
 ```
+
 Éditez `.env` et renseignez vos clés :
+
 ```
 VITE_SUPABASE_URL=https://xxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGc...
@@ -21,24 +27,12 @@ VITE_AI_API_KEY=votre_cle_api
 ```
 
 ### 3. Lancer le serveur de développement
+
 ```bash
 npm run dev
 ```
+
 Ouvrez http://localhost:5173
-
----
-
-## 🔑 Accès démo (sans Supabase)
-
-Sur la page de connexion, utilisez les boutons de démo rapide :
-
-| Rôle | Email | Mot de passe |
-|------|-------|-------------|
-| Admin | admin@aicstudy.com | n'importe lequel |
-| Formateur | marie@aicstudy.com | n'importe lequel |
-| Étudiant | sophie@aicstudy.com | n'importe lequel |
-
----
 
 ## 📁 Structure du projet
 
@@ -59,11 +53,10 @@ src/
 
 ## 🤖 Configuration IA
 
-Le service IA (`src/services/ai.js`) est compatible avec :
-- **Claude (Anthropic)** — `VITE_AI_API_URL=https://api.anthropic.com/v1/messages`
-- **Votre propre API (modele sur driver ou local)** — changez `VITE_AI_API_URL` dans `.env`
+Allez etudiez un peu vous allez comprendre le code je suis fatigué des readme
 
 Fonctionnalités IA disponibles :
+
 - Génération de plan de cours
 - Génération de quiz
 - Description de cours

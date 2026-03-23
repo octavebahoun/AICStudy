@@ -55,7 +55,7 @@ export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, getInitialState());
 
   useEffect(() => {
-    // onAuthStateChange gère le cas initial (INITIAL_SESSION) + les changements
+    // onAuthStateChange gère le cas initial en plus  les changements
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {

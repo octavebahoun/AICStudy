@@ -35,7 +35,6 @@ export function TeacherCourses() {
     setLoading(true);
     try {
       const data = await getCourses();
-      // Filter for current teacher
       setMyCourses(data.filter((c) => c.teacher_id === user.id));
     } catch (err) {
       console.error("Error fetching teacher courses:", err);
@@ -173,7 +172,7 @@ export function TeacherCourseEditor() {
   const [aiPlan, setAiPlan] = useState("");
   const [aiDescLoading, setAiDescLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);
-  const [editingLessonId, setEditingLessonId] = useState(null); // Track if we're editing a lesson
+  const [editingLessonId, setEditingLessonId] = useState(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [lessonForm, setLessonForm] = useState({
     title: "",
@@ -319,7 +318,6 @@ export function TeacherCourseEditor() {
     if (!lessonForm.title || !selectedModule) return;
     try {
       if (editingLessonId) {
-        // Update existing lesson
         const { data, error } = await supabase
           .from("lessons")
           .update({
@@ -347,7 +345,6 @@ export function TeacherCourseEditor() {
           }),
         );
       } else {
-        // Create new lesson
         const { data, error } = await supabase
           .from("lessons")
           .insert({
@@ -362,7 +359,6 @@ export function TeacherCourseEditor() {
 
         if (error) throw error;
 
-        // Update local state
         const updatedModules = modules.map((m) => {
           if (m.id === selectedModule.id) {
             return { ...m, lessons: [...(m.lessons || []), data] };

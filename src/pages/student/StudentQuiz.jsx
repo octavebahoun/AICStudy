@@ -35,7 +35,6 @@ export default function StudentQuiz() {
       const data = await getQuizDetails(courseId);
       setQuiz(data);
     } catch (err) {
-      // PGRST116 = aucun quiz pour ce cours (pas une vraie erreur)
       if (err?.code === "PGRST116") {
         setError("no_quiz");
       } else {
@@ -363,3 +362,5 @@ export default function StudentQuiz() {
     </div>
   );
 }
+
+//semaine 4 : j'ai fini les etudiants

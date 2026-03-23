@@ -1,28 +1,20 @@
--- ============================================================
--- AiC Study — Fix RLS + Schema manquants
--- Exécutez ce script dans l'éditeur SQL Supabase
--- ============================================================
 
--- ── 1. Ajout champ progress sur enrollments ─────────────────
+-- ── Je ne maitrise pas encore le sql totalemnt il me faut 1 semaine pour finir le cour sur sql 
 alter table public.enrollments
   add column if not exists progress int default 0,
   add column if not exists status text default 'active';
 
--- ── 2. Policies manquantes — Users ──────────────────────────
--- Permettre aux utilisateurs authentifiés de voir tous les profils (pour les foreign keys)
 drop policy if exists "Authenticated can view all users" on public.users;
 create policy "Authenticated can view all users"
   on public.users for select
   using (auth.role() = 'authenticated');
 
--- Permettre à un utilisateur de mettre à jour son propre profil
 drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile"
   on public.users for update
   using (auth.uid() = id);
 
--- ── 3. Policies — Courses (admins + pending) ────────────────
--- Les admins voient tous les cours
+
 drop policy if exists "Admins can manage all courses" on public.courses;
 create policy "Admins can manage all courses"
   on public.courses for all
@@ -31,13 +23,12 @@ create policy "Admins can manage all courses"
     where id = auth.uid() and role = 'admin'
   ));
 
--- Les étudiants voient les cours actifs
 drop policy if exists "Students can view active courses" on public.courses;
 create policy "Students can view active courses"
   on public.courses for select
   using (status = 'active' or teacher_id = auth.uid());
 
--- ── 4. Policies — Modules ───────────────────────────────────
+
 drop policy if exists "Teachers can manage modules" on public.modules;
 create policy "Teachers can manage modules"
   on public.modules for all
@@ -54,7 +45,6 @@ create policy "Authenticated can view modules"
   on public.modules for select
   using (auth.role() = 'authenticated');
 
--- ── 5. Policies — Lessons ───────────────────────────────────
 drop policy if exists "Teachers can manage lessons" on public.lessons;
 create policy "Teachers can manage lessons"
   on public.lessons for all
@@ -72,7 +62,7 @@ create policy "Authenticated can view lessons"
   on public.lessons for select
   using (auth.role() = 'authenticated');
 
--- ── 6. Policies — Quizzes ───────────────────────────────────
+
 drop policy if exists "Teachers can manage quizzes" on public.quizzes;
 create policy "Teachers can manage quizzes"
   on public.quizzes for all
@@ -89,7 +79,7 @@ create policy "Authenticated can view quizzes"
   on public.quizzes for select
   using (auth.role() = 'authenticated');
 
--- ── 7. Policies — Questions ─────────────────────────────────
+
 drop policy if exists "Teachers can manage questions" on public.questions;
 create policy "Teachers can manage questions"
   on public.questions for all
@@ -107,7 +97,7 @@ create policy "Authenticated can view questions"
   on public.questions for select
   using (auth.role() = 'authenticated');
 
--- ── 8. Policies — Quiz Attempts ─────────────────────────────
+
 drop policy if exists "Students can manage their attempts" on public.quiz_attempts;
 create policy "Students can manage their attempts"
   on public.quiz_attempts for all
@@ -125,7 +115,7 @@ create policy "Teachers can view attempts for their quizzes"
     )
   );
 
--- ── 9. Policies — Enrollments ───────────────────────────────
+
 drop policy if exists "Students can update their enrollments" on public.enrollments;
 create policy "Students can update their enrollments"
   on public.enrollments for update
@@ -139,7 +129,7 @@ create policy "Admins can view all enrollments"
     where id = auth.uid() and role = 'admin'
   ));
 
--- ── 10. Policies — Forum Replies ─────────────────────────────
+
 drop policy if exists "Authenticated can view replies" on public.forum_replies;
 create policy "Authenticated can view replies"
   on public.forum_replies for select
@@ -150,7 +140,7 @@ create policy "Authenticated can post replies"
   on public.forum_replies for insert
   with check (auth.uid() = author_id);
 
--- ── 11. Policies — Forum Posts update/delete ────────────────
+
 drop policy if exists "Admins can manage all posts" on public.forum_posts;
 create policy "Admins can manage all posts"
   on public.forum_posts for all
@@ -169,7 +159,7 @@ create policy "Authors can delete their posts"
   on public.forum_posts for delete
   using (author_id = auth.uid());
 
--- ── 12. Policies — Badges ───────────────────────────────────
+
 drop policy if exists "Admins can manage badges" on public.badges;
 create policy "Admins can manage badges"
   on public.badges for all
@@ -178,7 +168,7 @@ create policy "Admins can manage badges"
     where id = auth.uid() and role = 'admin'
   ));
 
--- ── 13. Policies — Certificates ─────────────────────────────
+
 drop policy if exists "Admins can manage certificates" on public.certificates;
 create policy "Admins can manage certificates"
   on public.certificates for all
@@ -187,7 +177,6 @@ create policy "Admins can manage certificates"
     where id = auth.uid() and role = 'admin'
   ));
 
--- ── 14. Trigger auto-création profil à l'inscription ────────
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
@@ -212,3 +201,5 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- semaine 3 : finition et réecriture du Schéma Supabase générée par ia et detruit pas l'ia -- AiC Study —  j'ai du apprendre le sql pour reprendre ne pas oublier 

@@ -124,3 +124,5 @@ const t = {
 }
 
 export default t
+
+//semaine 1 : apres translation

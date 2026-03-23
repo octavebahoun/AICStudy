@@ -334,7 +334,7 @@ export function StudentCourseReader() {
         return;
       }
 
-      // Fetch progress
+      // progression des etudiants
       if (user?.id) {
         console.log("Reader: Fetching progress for user:", user.id);
         const { data: progressData, error: progErr } = await supabase
@@ -349,7 +349,7 @@ export function StudentCourseReader() {
           progressMap[p.lesson_id] = p.completed;
         });
 
-        // Merge progress into lessons
+        //
         const modulesWithProgress = (data.modules || []).map((m) => ({
           ...m,
           lessons: (m.lessons || []).map((l) => ({
@@ -391,7 +391,6 @@ export function StudentCourseReader() {
       const isCompleted = !activeLesson.completed;
       await updateLessonProgress(user.id, lessonId, isCompleted);
 
-      // Update local state
       const updatedModules = course.modules.map((m) => ({
         ...m,
         lessons: m.lessons.map((l) => {
@@ -401,9 +400,6 @@ export function StudentCourseReader() {
       }));
       setCourse({ ...course, modules: updatedModules });
       setActiveLesson({ ...activeLesson, completed: isCompleted });
-
-      // If just completed and next lesson exists, maybe wait or show congrats?
-      // For now just stay on current.
     } catch (err) {
       console.error(err);
     }
