@@ -137,7 +137,7 @@ export default function AdminCourses() {
                           <div style={{ fontWeight: 600, fontSize: 14 }}>
                             {c.title}
                           </div>
-                          <div style={{ fontSize: 12, color: "#64748B" }}>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                             {c.category} · {c.level}
                           </div>
                         </div>
@@ -153,7 +153,7 @@ export default function AdminCourses() {
                         <span
                           style={{
                             fontSize: 12,
-                            color: "#64748B",
+                            color: "var(--text-muted)",
                             minWidth: 32,
                           }}
                         >
@@ -192,7 +192,7 @@ export default function AdminCourses() {
                           className="btn-icon"
                           onClick={() => remove(c.id)}
                         >
-                          <Icon name="trash" size={15} color="#EF4444" />
+                          <Icon name="trash" size={15} color="var(--danger)" />
                         </button>
                       </div>
                     </td>

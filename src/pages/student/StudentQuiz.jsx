@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { Icon, Spinner } from "../../components/UI";
-import { getQuizDetails } from "../../services/db";
+import { getQuizDetails, completeCourseIfEligible } from "../../services/db";
+import { supabase } from "../../services/supabase";
 import { callAI, aiPrompts } from "../../services/ai";
 import t from "../../data/translations";
 
 export default function StudentQuiz() {
   const { state } = useApp();
-  const { lang } = state;
+  const { user, lang } = state;
   const navigate = useNavigate();
   const { courseId } = useParams();
 
@@ -78,14 +79,17 @@ export default function StudentQuiz() {
     try {
       const pct = Math.round((finalScore / quiz.questions.length) * 100);
       const passed = pct >= quiz.passing_score;
-      await supabase.from("quiz_attempts").insert({
+      const { error: attemptError } = await supabase.from("quiz_attempts").insert({
         student_id: user.id,
         quiz_id: quiz.id,
-        course_id: courseId,
         score: pct,
         passed: passed,
         created_at: new Date().toISOString(),
       });
+      if (attemptError) throw attemptError;
+      if (passed) {
+        await completeCourseIfEligible(user.id, courseId);
+      }
     } catch (err) {
       console.error("Error saving quiz attempt:", err);
     } finally {
@@ -131,10 +135,10 @@ export default function StudentQuiz() {
         style={{ textAlign: "center", paddingTop: 60 }}
       >
         <div style={{ fontSize: 48, marginBottom: 16 }}>📝</div>
-        <h2 style={{ color: "#475569", marginBottom: 8 }}>
+        <h2 style={{ color: "var(--primary-light)", marginBottom: 8 }}>
           {lang === "fr" ? "Aucun quiz disponible" : "No quiz available"}
         </h2>
-        <p style={{ color: "#94A3B8", fontSize: 14, marginBottom: 24 }}>
+        <p style={{ color: "var(--token-color-palette-neutral-400)", fontSize: 14, marginBottom: 24 }}>
           {lang === "fr"
             ? "Ce cours n'a pas encore de quiz."
             : "This course doesn't have a quiz yet."}
@@ -152,10 +156,10 @@ export default function StudentQuiz() {
         style={{ textAlign: "center", paddingTop: 60 }}
       >
         <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-        <h2 style={{ color: "#EF4444", marginBottom: 8 }}>
+        <h2 style={{ color: "var(--danger)", marginBottom: 8 }}>
           {lang === "fr" ? "Erreur de chargement" : "Loading error"}
         </h2>
-        <p style={{ color: "#94A3B8", fontSize: 14, marginBottom: 24 }}>
+        <p style={{ color: "var(--token-color-palette-neutral-400)", fontSize: 14, marginBottom: 24 }}>
           {error}
         </p>
         <button className="btn btn-primary" onClick={fetchQuiz}>
@@ -181,8 +185,8 @@ export default function StudentQuiz() {
             className="cert-card mb-4"
             style={{
               background: passed
-                ? "linear-gradient(135deg, #10B981, #059669)"
-                : "linear-gradient(135deg, #EF4444, #DC2626)",
+                ? "linear-gradient(135deg, var(--success), var(--token-color-foreground-success-on-surface))"
+                : "linear-gradient(135deg, var(--danger), var(--token-color-foreground-critical-on-surface))",
             }}
           >
             <div style={{ fontSize: 52, marginBottom: 16 }}>
@@ -250,7 +254,7 @@ export default function StudentQuiz() {
               {t[lang].questions} {currentQ + 1}/{quiz.questions.length}
             </p>
           </div>
-          <div style={{ fontSize: 14, color: "#64748B" }}>
+          <div style={{ fontSize: 14, color: "var(--text-muted)" }}>
             ⏱ {quiz.time_limit} {t[lang].minutes}
           </div>
         </div>
@@ -291,7 +295,7 @@ export default function StudentQuiz() {
                 onClick={() => !submitted && setSelected(i)}
               >
                 <span
-                  style={{ fontWeight: 600, marginRight: 8, color: "#94A3B8" }}
+                  style={{ fontWeight: 600, marginRight: 8, color: "var(--token-color-palette-neutral-400)" }}
                 >
                   {["A", "B", "C", "D"][i]}.
                 </span>
@@ -307,7 +311,7 @@ export default function StudentQuiz() {
                 padding: 14,
                 borderRadius: 8,
                 background:
-                  selected === question.correct_index ? "#D1FAE5" : "#FEE2E2",
+                  selected === question.correct_index ? "var(--surface-green-100)" : "var(--surface-red-100)",
               }}
             >
               <div
@@ -315,7 +319,7 @@ export default function StudentQuiz() {
                   fontWeight: 600,
                   fontSize: 14,
                   color:
-                    selected === question.correct_index ? "#065F46" : "#991B1B",
+                    selected === question.correct_index ? "var(--token-color-foreground-success-high-contrast)" : "var(--token-color-foreground-critical-high-contrast)",
                   marginBottom: 6,
                 }}
               >
@@ -326,12 +330,12 @@ export default function StudentQuiz() {
               {aiLoading ? (
                 <div className="flex items-center gap-2">
                   <Spinner dark />
-                  <span style={{ fontSize: 13, color: "#64748B" }}>
+                  <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
                     IA en cours...
                   </span>
                 </div>
               ) : (
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: "#374151" }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--primary-light)" }}>
                   {aiExplanation || question.explanation}
                 </p>
               )}

@@ -185,8 +185,8 @@ export default function Login() {
           {error && (
             <div
               style={{
-                background: "#FEE2E2",
-                color: "#991B1B",
+                background: "var(--surface-red-100)",
+                color: "var(--token-color-foreground-critical-high-contrast)",
                 padding: "10px 14px",
                 borderRadius: 8,
                 fontSize: 13,
@@ -266,13 +266,13 @@ export default function Login() {
               textAlign: "center",
               marginTop: 16,
               fontSize: 14,
-              color: "#64748B",
+              color: "var(--text-muted)",
             }}
           >
             {isRegister ? t[lang].alreadyAccount : t[lang].noAccount}{" "}
             <button
               style={{
-                color: "#3B82F6",
+                color: "var(--accent)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",

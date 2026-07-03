@@ -115,6 +115,15 @@ create policy "Teachers can view attempts for their quizzes"
     )
   );
 
+-- sans ça, le taux de complétion du dashboard admin reste à 0% (getAdminStats ne voit aucune tentative)
+drop policy if exists "Admins can view all quiz attempts" on public.quiz_attempts;
+create policy "Admins can view all quiz attempts"
+  on public.quiz_attempts for select
+  using (exists (
+    select 1 from public.users
+    where id = auth.uid() and role = 'admin'
+  ));
+
 
 drop policy if exists "Students can update their enrollments" on public.enrollments;
 create policy "Students can update their enrollments"
@@ -128,6 +137,30 @@ create policy "Admins can view all enrollments"
     select 1 from public.users
     where id = auth.uid() and role = 'admin'
   ));
+
+-- sans ça, un formateur ne peut pas lire les inscriptions de ses propres cours :
+-- le nombre d'inscrits, le taux de complétion et la liste des étudiants restent à 0/vides.
+-- Une policy existante sur courses ("Enrolled students can view course") référence déjà
+-- enrollments : une policy enrollments -> courses en sous-requête directe créerait un cycle
+-- (42P17 infinite recursion). On passe par une fonction security definer pour le casser.
+drop policy if exists "Teachers can view enrollments for their courses" on public.enrollments;
+
+create or replace function public.is_course_teacher(p_course_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.courses
+    where courses.id = p_course_id and courses.teacher_id = auth.uid()
+  );
+$$;
+
+create policy "Teachers can view enrollments for their courses"
+  on public.enrollments for select
+  using (public.is_course_teacher(enrollments.course_id));
 
 
 drop policy if exists "Authenticated can view replies" on public.forum_replies;
@@ -201,5 +234,20 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- semaine 4 : sans cette policy, un étudiant qui termine un cours ne peut pas recevoir
+-- son certificat (l'insert est bloqué par RLS, silencieusement côté app)
+drop policy if exists "Students can earn their certificates" on public.certificates;
+create policy "Students can earn their certificates"
+  on public.certificates for insert
+  with check (student_id = auth.uid());
+
+-- la policy select de schema.sql n'a jamais été appliquée en prod : sans elle, un insert
+-- avec .select() (ou upsert) échoue car Postgres doit pouvoir relire la ligne insérée,
+-- et l'étudiant ne peut jamais voir ses propres certificats
+drop policy if exists "Users can view their certificates" on public.certificates;
+create policy "Users can view their certificates"
+  on public.certificates for select
+  using (student_id = auth.uid());
 
 -- semaine 3 : finition et réecriture du Schéma Supabase générée par ia et detruit pas l'ia -- AiC Study —  j'ai du apprendre le sql pour reprendre ne pas oublier 

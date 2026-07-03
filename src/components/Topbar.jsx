@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { Icon, Avatar } from "./UI";
+import { markNotificationsRead } from "../services/db";
 import t from "../data/translations";
 
 export default function Topbar() {
@@ -17,8 +18,8 @@ export default function Topbar() {
     user.role === "admin"
       ? "#1E3A5F"
       : user.role === "teacher"
-        ? "#8B5CF6"
-        : "#10B981";
+        ? "var(--token-color-foreground-highlight-on-surface)"
+        : "var(--success)";
   const profilePath = `/${user.role}/profile`;
 
   return (
@@ -37,7 +38,7 @@ export default function Topbar() {
           <Icon name="menu" size={18} />
         </button>
         <div className="search-bar">
-          <Icon name="eye" size={15} color="#94A3B8" />
+          <Icon name="eye" size={15} color="var(--token-color-palette-neutral-400)" />
           <input className="search-input" placeholder={t[lang].search} />
         </div>
       </div>
@@ -64,6 +65,7 @@ export default function Topbar() {
             onClick={() => {
               setShowNotifs(!showNotifs);
               dispatch({ type: "MARK_NOTIFICATIONS_READ" });
+              markNotificationsRead(user.id);
             }}
           >
             <Icon name="bell" size={18} />
@@ -74,12 +76,17 @@ export default function Topbar() {
               <div className="font-semibold mb-2 text-sm">
                 {t[lang].notifications}
               </div>
+              {notifications.length === 0 && (
+                <div style={{ fontSize: 13, color: "var(--text-muted)", padding: "8px 4px" }}>
+                  {lang === "fr" ? "Aucune notification" : "No notifications"}
+                </div>
+              )}
               {notifications.map((n) => (
                 <div
                   key={n.id}
                   className={`notif-item ${!n.read ? "unread" : ""}`}
                 >
-                  {n.text}
+                  {n.message}
                 </div>
               ))}
             </div>

@@ -9,7 +9,8 @@ import {
   AIPanel,
   Spinner,
 } from "../../components/UI";
-import { supabase } from "../../services/supabase";
+import { supabase, subscribeToTable } from "../../services/supabase";
+import { getTeacherStudents, getCourses } from "../../services/db";
 import { callAI, aiPrompts } from "../../services/ai";
 import t from "../../data/translations";
 
@@ -47,6 +48,11 @@ export function TeacherQuiz() {
     fetchQuiz();
     if (activeTab === "results") fetchAttempts();
   }, [courseId, activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "results" || !quiz?.id) return;
+    return subscribeToTable("quiz_attempts", `quiz_id=eq.${quiz.id}`, fetchAttempts);
+  }, [activeTab, quiz?.id]);
 
   const fetchQuiz = async () => {
     setLoading(true);
@@ -312,8 +318,8 @@ export function TeacherQuiz() {
   if (!quiz) {
     return (
       <div className="page-content center flex-col gap-4">
-        <Icon name="quiz" size={48} color="#94A3B8" />
-        <h2 style={{ color: "#475569" }}>
+        <Icon name="quiz" size={48} color="var(--token-color-palette-neutral-400)" />
+        <h2 style={{ color: "var(--primary-light)" }}>
           {lang === "fr"
             ? "Aucun quiz pour ce cours"
             : "No quiz for this course"}
@@ -365,7 +371,7 @@ export function TeacherQuiz() {
                   padding: "6px 0",
                   fontSize: 14,
                   fontWeight: activeTab === tab.id ? 600 : 400,
-                  color: activeTab === tab.id ? "var(--primary)" : "#64748B",
+                  color: activeTab === tab.id ? "var(--primary)" : "var(--text-muted)",
                   borderBottom:
                     activeTab === tab.id
                       ? "2px solid var(--primary)"
@@ -412,8 +418,8 @@ export function TeacherQuiz() {
             {showAddQ && (
               <div
                 style={{
-                  background: "#F8FAFC",
-                  border: "1px solid #E2E8F0",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
                   borderRadius: 10,
                   padding: 16,
                   marginBottom: 12,
@@ -511,7 +517,7 @@ export function TeacherQuiz() {
               <p
                 style={{
                   textAlign: "center",
-                  color: "#94A3B8",
+                  color: "var(--token-color-palette-neutral-400)",
                   padding: 20,
                   fontSize: 13,
                 }}
@@ -525,7 +531,7 @@ export function TeacherQuiz() {
                 <div
                   key={q.id || i}
                   style={{
-                    border: "1px solid #E2E8F0",
+                    border: "1px solid var(--border)",
                     borderRadius: 8,
                     padding: 12,
                     marginBottom: 8,
@@ -546,7 +552,7 @@ export function TeacherQuiz() {
                         className="btn-icon"
                         onClick={() => handleDeleteQuestion(q.id)}
                       >
-                        <Icon name="trash" size={14} color="#EF4444" />
+                        <Icon name="trash" size={14} color="var(--danger)" />
                       </button>
                     </div>
                   </div>
@@ -558,8 +564,8 @@ export function TeacherQuiz() {
                         padding: "4px 8px",
                         borderRadius: 4,
                         background:
-                          oi === q.correct_index ? "#D1FAE5" : "#F8FAFC",
-                        color: oi === q.correct_index ? "#065F46" : "#64748B",
+                          oi === q.correct_index ? "var(--surface-green-100)" : "var(--bg)",
+                        color: oi === q.correct_index ? "var(--token-color-foreground-success-high-contrast)" : "var(--text-muted)",
                         marginBottom: 2,
                       }}
                     >
@@ -577,7 +583,7 @@ export function TeacherQuiz() {
             actionLabel={t[lang].generateQuiz}
             loading={aiLoading}
           >
-            <p style={{ fontSize: 13, color: "#1E40AF", marginBottom: 12 }}>
+            <p style={{ fontSize: 13, color: "var(--token-color-foreground-action-active)", marginBottom: 12 }}>
               {lang === "fr"
                 ? "Générez des questions depuis le contenu du cours."
                 : "Generate questions from course content."}
@@ -603,7 +609,7 @@ export function TeacherQuiz() {
                   marginTop: 8,
                   fontSize: 13,
                   lineHeight: 1.7,
-                  color: "#374151",
+                  color: "var(--primary-light)",
                   background: "white",
                   padding: 10,
                   borderRadius: 6,
@@ -625,7 +631,7 @@ export function TeacherQuiz() {
           {loadingAttempts ? (
             <Spinner dark />
           ) : attempts.length === 0 ? (
-            <p style={{ padding: 20, textAlign: "center", color: "#64748B" }}>
+            <p style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
               {lang === "fr"
                 ? "Aucune tentative enregistrée."
                 : "No attempts recorded."}
@@ -648,7 +654,7 @@ export function TeacherQuiz() {
                         <div style={{ fontWeight: 600 }}>
                           {a.student?.full_name}
                         </div>
-                        <div style={{ fontSize: 11, color: "#94A3B8" }}>
+                        <div style={{ fontSize: 11, color: "var(--token-color-palette-neutral-400)" }}>
                           {a.student?.email}
                         </div>
                       </td>
@@ -666,7 +672,7 @@ export function TeacherQuiz() {
                               : "Failed"}
                         </Badge>
                       </td>
-                      <td style={{ fontSize: 12, color: "#64748B" }}>
+                      <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
                         {new Date(a.created_at).toLocaleString()}
                       </td>
                     </tr>
@@ -733,21 +739,17 @@ export function TeacherQuiz() {
 
 export function TeacherStudents() {
   const { state } = useApp();
-  const { lang } = state;
+  const { user, lang } = state;
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.id) return;
     const fetchStudents = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .eq("role", "student")
-          .order("full_name");
-        if (error) throw error;
-        setStudents(data || []);
+        const data = await getTeacherStudents(user.id);
+        setStudents(data);
       } catch (err) {
         console.error("Error fetching students:", err);
       } finally {
@@ -755,7 +757,8 @@ export function TeacherStudents() {
       }
     };
     fetchStudents();
-  }, []);
+    return subscribeToTable("enrollments", null, fetchStudents);
+  }, [user?.id]);
 
   return (
     <div className="page-content fade-in">
@@ -776,7 +779,7 @@ export function TeacherStudents() {
             <Spinner dark />
           </div>
         ) : students.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#94A3B8", padding: 40 }}>
+          <p style={{ textAlign: "center", color: "var(--token-color-palette-neutral-400)", padding: 40 }}>
             {lang === "fr"
               ? "Aucun étudiant inscrit."
               : "No students enrolled."}
@@ -788,8 +791,8 @@ export function TeacherStudents() {
                 <tr>
                   <th>{lang === "fr" ? "Étudiant" : "Student"}</th>
                   <th>{lang === "fr" ? "Email" : "Email"}</th>
+                  <th>{lang === "fr" ? "Cours suivis" : "Enrolled courses"}</th>
                   <th>{lang === "fr" ? "Statut" : "Status"}</th>
-                  <th>{lang === "fr" ? "Inscrit le" : "Joined"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -803,15 +806,24 @@ export function TeacherStudents() {
                             (s.full_name || "?").substring(0, 2).toUpperCase()
                           }
                           size={32}
-                          bg="#10B981"
+                          bg="var(--success)"
                         />
                         <div style={{ fontWeight: 600, fontSize: 14 }}>
                           {s.full_name || s.email}
                         </div>
                       </div>
                     </td>
-                    <td style={{ fontSize: 13, color: "#64748B" }}>
+                    <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
                       {s.email}
+                    </td>
+                    <td>
+                      <div className="flex flex-col gap-1">
+                        {s.courses.map((c) => (
+                          <span key={c.id} style={{ fontSize: 12 }}>
+                            {c.title} — <strong>{c.progress}%</strong>
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td>
                       <span
@@ -820,17 +832,12 @@ export function TeacherStudents() {
                           padding: "2px 8px",
                           borderRadius: 20,
                           background:
-                            s.status === "active" ? "#D1FAE5" : "#FEE2E2",
-                          color: s.status === "active" ? "#065F46" : "#991B1B",
+                            s.status === "active" ? "var(--surface-green-100)" : "var(--surface-red-100)",
+                          color: s.status === "active" ? "var(--token-color-foreground-success-high-contrast)" : "var(--token-color-foreground-critical-high-contrast)",
                         }}
                       >
                         {s.status}
                       </span>
-                    </td>
-                    <td style={{ fontSize: 13, color: "#64748B" }}>
-                      {s.created_at
-                        ? new Date(s.created_at).toLocaleDateString()
-                        : "—"}
                     </td>
                   </tr>
                 ))}
@@ -869,6 +876,7 @@ export function TeacherForum() {
       }
     };
     fetchPosts();
+    return subscribeToTable("forum_posts", null, fetchPosts);
   }, []);
 
   const addPost = async () => {
@@ -939,11 +947,11 @@ export function TeacherForum() {
                     (p.author?.full_name || "?").substring(0, 2).toUpperCase()
                   }
                   size={32}
-                  bg="#3B82F6"
+                  bg="var(--accent)"
                 />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
-                  <div style={{ fontSize: 12, color: "#64748B" }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     {p.author?.full_name} ·{" "}
                     {new Date(p.created_at).toLocaleDateString()}
                   </div>
@@ -951,10 +959,10 @@ export function TeacherForum() {
                 {p.pinned && <Badge type="info">📌</Badge>}
               </div>
             </div>
-            <p style={{ fontSize: 14, color: "#374151" }}>{p.content}</p>
+            <p style={{ fontSize: 14, color: "var(--primary-light)" }}>{p.content}</p>
             <div
               className="flex gap-4 mt-2"
-              style={{ fontSize: 12, color: "#94A3B8" }}
+              style={{ fontSize: 12, color: "var(--token-color-palette-neutral-400)" }}
             >
               <span>💬 {p.replies_count || 0}</span>
             </div>
@@ -977,11 +985,8 @@ export function TeacherProfile() {
     if (!user?.id) return;
     const fetchCourses = async () => {
       try {
-        const { data } = await supabase
-          .from("courses")
-          .select("id, title, enrolled_count, completion_rate")
-          .eq("teacher_id", user.id);
-        setCourses(data || []);
+        const data = await getCourses({ teacherId: user.id });
+        setCourses(data);
       } catch (err) {
         console.error(err);
       } finally {
@@ -1026,7 +1031,7 @@ export function TeacherProfile() {
       <div className="grid-2">
         <div className="card">
           <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <Avatar initials={user?.avatar} size={72} bg="#8B5CF6" />
+            <Avatar initials={user?.avatar} size={72} bg="var(--token-color-foreground-highlight-on-surface)" />
             <div style={{ marginTop: 12, fontSize: 18, fontWeight: 600 }}>
               {user?.name}
             </div>
@@ -1083,13 +1088,13 @@ export function TeacherProfile() {
               <div
                 key={i}
                 className="flex justify-between items-center"
-                style={{ padding: 12, borderBottom: "1px solid #F1F5F9" }}
+                style={{ padding: 12, borderBottom: "1px solid var(--token-color-palette-neutral-100)" }}
               >
-                <span style={{ fontSize: 14, color: "#64748B" }}>
+                <span style={{ fontSize: 14, color: "var(--text-muted)" }}>
                   {s.label}
                 </span>
                 <span
-                  style={{ fontSize: 16, fontWeight: 700, color: "#1E293B" }}
+                  style={{ fontSize: 16, fontWeight: 700, color: "var(--primary-light)" }}
                 >
                   {s.value}
                 </span>

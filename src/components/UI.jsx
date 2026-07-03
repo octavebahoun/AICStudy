@@ -97,7 +97,7 @@ export const Spinner = ({ dark = false }) => (
 );
 
 //  StatCard 
-export const StatCard = ({ icon, label, value, trend, bg = "#EFF6FF" }) => (
+export const StatCard = ({ icon, label, value, trend, bg = "var(--surface-blue)" }) => (
   <div className="stat-card">
     <div className="stat-icon" style={{ background: bg }}>
       {icon}
@@ -142,7 +142,7 @@ export const AIPanel = ({
 }) => (
   <div className="ai-panel">
     <div className="ai-panel-title">
-      <Icon name="ai" size={16} color="#3B82F6" />
+      <Icon name="ai" size={16} color="var(--accent)" />
       {title}
     </div>
     {children}
@@ -216,7 +216,7 @@ export const BarChart = ({ data, height = 120 }) => {
             <div
               title={`${d.label}: ${d.value}`}
               style={{
-                background: d.color || "#3B82F6",
+                background: d.color || "var(--accent)",
                 borderRadius: "4px 4px 0 0",
                 height: `${(d.value / max) * 100}%`,
                 opacity: 0.85,
@@ -227,7 +227,7 @@ export const BarChart = ({ data, height = 120 }) => {
           </div>
           {d.label && (
             <div
-              style={{ fontSize: 10, color: "#94A3B8", whiteSpace: "nowrap" }}
+              style={{ fontSize: 10, color: "var(--token-color-palette-neutral-400)", whiteSpace: "nowrap" }}
             >
               {d.label}
             </div>

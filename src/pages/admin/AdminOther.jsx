@@ -3,7 +3,7 @@ import { useApp } from "../../context/AppContext";
 import { Icon, Avatar, Badge, AIPanel, Spinner } from "../../components/UI";
 import { getForumPosts } from "../../services/db";
 import { callAI, aiPrompts } from "../../services/ai";
-import { supabase } from "../../services/supabase";
+import { supabase, subscribeToTable } from "../../services/supabase";
 import t from "../../data/translations";
 
 export function AdminForum() {
@@ -14,6 +14,7 @@ export function AdminForum() {
 
   useEffect(() => {
     fetchPosts();
+    return subscribeToTable("forum_posts", null, fetchPosts);
   }, []);
 
   const fetchPosts = async () => {
@@ -63,7 +64,7 @@ export function AdminForum() {
       ) : posts.length === 0 ? (
         <div
           className="card"
-          style={{ textAlign: "center", padding: 40, color: "#64748B" }}
+          style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}
         >
           Aucun message sur le forum
         </div>
@@ -75,11 +76,11 @@ export function AdminForum() {
                 <Avatar
                   initials={p.author?.avatar_url || "?"}
                   size={32}
-                  bg="#3B82F6"
+                  bg="var(--accent)"
                 />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
-                  <div style={{ fontSize: 12, color: "#64748B" }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     {p.author?.full_name} ·{" "}
                     {new Date(p.created_at).toLocaleDateString()}
                   </div>
@@ -97,7 +98,7 @@ export function AdminForum() {
                   <Icon
                     name="star"
                     size={15}
-                    color={p.pinned ? "#F59E0B" : "#94A3B8"}
+                    color={p.pinned ? "var(--warning)" : "var(--token-color-palette-neutral-400)"}
                   />
                 </button>
                 <button
@@ -105,14 +106,14 @@ export function AdminForum() {
                   title={t[lang].delete}
                   onClick={() => remove(p.id)}
                 >
-                  <Icon name="trash" size={15} color="#EF4444" />
+                  <Icon name="trash" size={15} color="var(--danger)" />
                 </button>
               </div>
             </div>
-            <p style={{ fontSize: 14, color: "#374151" }}>{p.content}</p>
+            <p style={{ fontSize: 14, color: "var(--primary-light)" }}>{p.content}</p>
             <div
               className="flex gap-4 mt-2"
-              style={{ fontSize: 12, color: "#94A3B8" }}
+              style={{ fontSize: 12, color: "var(--token-color-palette-neutral-400)" }}
             >
               <span>💬 {p.replies_count || 0}</span>
             </div>
@@ -162,7 +163,7 @@ export function AdminCertificates() {
 
     const { data, error } = await supabase
       .from("badges")
-      .insert({ name, icon, color: "#3B82F6" })
+      .insert({ name, icon, color: "var(--accent)" })
       .select()
       .single();
 
@@ -208,7 +209,7 @@ export function AdminCertificates() {
               <p
                 style={{
                   textAlign: "center",
-                  color: "#94A3B8",
+                  color: "var(--token-color-palette-neutral-400)",
                   padding: 20,
                   fontSize: 13,
                 }}
@@ -226,7 +227,7 @@ export function AdminCertificates() {
                     padding: 10,
                     borderRadius: 8,
                     marginBottom: 8,
-                    border: "1px solid #E2E8F0",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <div className="flex items-center gap-3">
@@ -235,7 +236,7 @@ export function AdminCertificates() {
                         width: 38,
                         height: 38,
                         borderRadius: "50%",
-                        background: (b.color || "#3B82F6") + "20",
+                        background: (b.color || "var(--accent)") + "20",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -248,7 +249,7 @@ export function AdminCertificates() {
                       <div style={{ fontWeight: 600, fontSize: 14 }}>
                         {b.name}
                       </div>
-                      <div style={{ fontSize: 12, color: "#64748B" }}>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                         {b.description || "—"}
                       </div>
                     </div>
@@ -258,7 +259,7 @@ export function AdminCertificates() {
                       className="btn-icon"
                       onClick={() => deleteBadge(b.id)}
                     >
-                      <Icon name="trash" size={15} color="#EF4444" />
+                      <Icon name="trash" size={15} color="var(--danger)" />
                     </button>
                   </div>
                 </div>
@@ -271,7 +272,7 @@ export function AdminCertificates() {
               <p
                 style={{
                   textAlign: "center",
-                  color: "#94A3B8",
+                  color: "var(--token-color-palette-neutral-400)",
                   padding: 20,
                   fontSize: 13,
                 }}
@@ -286,7 +287,7 @@ export function AdminCertificates() {
                   key={c.id}
                   style={{
                     padding: 14,
-                    border: "1px solid #E2E8F0",
+                    border: "1px solid var(--border)",
                     borderRadius: 8,
                     marginBottom: 8,
                   }}
@@ -294,7 +295,7 @@ export function AdminCertificates() {
                   <div style={{ fontWeight: 600, fontSize: 14 }}>
                     {c.course?.title || "Course deleted"}
                   </div>
-                  <div style={{ fontSize: 12, color: "#64748B" }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     {c.student?.full_name} · {t[lang].score}: {c.score}% ·{" "}
                     {new Date(c.issued_at).toLocaleDateString()}
                   </div>
@@ -413,25 +414,25 @@ export function AdminReports() {
             label: lang === "fr" ? "Étudiants" : "Students",
             value: metrics.students,
             trend: "Total",
-            color: "#3B82F6",
+            color: "var(--accent)",
           },
           {
             label: lang === "fr" ? "Cours" : "Courses",
             value: metrics.courses,
             trend: "Total",
-            color: "#10B981",
+            color: "var(--success)",
           },
           {
             label: lang === "fr" ? "Score moyen" : "Avg score",
             value: metrics.avgScore + "%",
             trend: "Quiz",
-            color: "#F59E0B",
+            color: "var(--warning)",
           },
           {
             label: lang === "fr" ? "Inscriptions" : "Enrollments",
             value: metrics.enrollments,
             trend: "Total",
-            color: "#6366F1",
+            color: "var(--token-color-foreground-highlight)",
           },
         ].map((s, i) => (
           <div key={i} className="stat-card">
@@ -497,13 +498,13 @@ export function AdminReports() {
           <div
             className="ai-report-box"
             style={{
-              background: "#F8FAFC",
-              border: "1px solid #E2E8F0",
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
               borderRadius: 8,
               padding: 16,
               fontSize: 14,
               lineHeight: 1.7,
-              color: "#374151",
+              color: "var(--primary-light)",
               whiteSpace: "pre-wrap",
             }}
           >
@@ -564,10 +565,10 @@ export function AdminSettings() {
           <div
             style={{
               padding: 12,
-              background: "#F0FDF4",
+              background: "var(--surface-green)",
               borderRadius: 8,
               fontSize: 13,
-              color: "#065F46",
+              color: "var(--token-color-foreground-success-high-contrast)",
             }}
           >
             ✅{" "}

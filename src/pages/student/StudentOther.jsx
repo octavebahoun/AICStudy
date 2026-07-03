@@ -10,8 +10,8 @@ import {
   Icon,
   Spinner,
 } from "../../components/UI";
-import { getStudentEnrollments, getForumPosts } from "../../services/db";
-import { supabase } from "../../services/supabase";
+import { getStudentEnrollments, getStudentCertificates, getForumPosts } from "../../services/db";
+import { supabase, subscribeToTable } from "../../services/supabase";
 import t from "../../data/translations";
 
 export function StudentMyCourses() {
@@ -71,7 +71,7 @@ export function StudentMyCourses() {
       ) : list.length === 0 ? (
         <div
           className="card"
-          style={{ textAlign: "center", padding: 40, color: "#64748B" }}
+          style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}
         >
           {lang === "fr" ? "Aucun cours ici." : "No courses here."}
         </div>
@@ -84,7 +84,7 @@ export function StudentMyCourses() {
                 <div
                   className="course-thumb"
                   style={{
-                    background: `linear-gradient(135deg, ${c.color || "#3B82F6"}, ${c.color || "#3B82F6"}99)`,
+                    background: `linear-gradient(135deg, ${c.color || "var(--accent)"}, ${c.color || "var(--accent)"}99)`,
                   }}
                 >
                   {c.thumbnail || "??"}
@@ -100,7 +100,7 @@ export function StudentMyCourses() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#64748B",
+                      color: "var(--text-muted)",
                       margin: "4px 0 12px",
                     }}
                   >
@@ -175,22 +175,22 @@ export function StudentProgress() {
 
       <div className="grid-3 mb-6">
         <StatCard
-          icon={<Icon name="trending" size={24} color="#3B82F6" />}
+          icon={<Icon name="trending" size={24} color="var(--accent)" />}
           label={lang === "fr" ? "Progression moyenne" : "Average Progress"}
           value={`${avgProgress}%`}
-          bg="#EFF6FF"
+          bg="var(--surface-blue)"
         />
         <StatCard
-          icon={<Icon name="checkCircle" size={24} color="#10B981" />}
+          icon={<Icon name="checkCircle" size={24} color="var(--success)" />}
           label={lang === "fr" ? "Cours terminés" : "Courses Finished"}
           value={completed.length}
-          bg="#F0FDF4"
+          bg="var(--surface-green)"
         />
         <StatCard
-          icon={<Icon name="bookOpen" size={24} color="#F59E0B" />}
+          icon={<Icon name="bookOpen" size={24} color="var(--warning)" />}
           label={lang === "fr" ? "En cours" : "In Progress"}
           value={enrollments.length - completed.length}
-          bg="#FEF3C7"
+          bg="var(--surface-amber-100)"
         />
       </div>
 
@@ -207,7 +207,7 @@ export function StudentProgress() {
         {loading ? (
           <Spinner dark />
         ) : enrollments.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#64748B", padding: 20 }}>
+          <p style={{ textAlign: "center", color: "var(--text-muted)", padding: 20 }}>
             {lang === "fr"
               ? "Aucune donnée de progression."
               : "No progress data available."}
@@ -217,7 +217,7 @@ export function StudentProgress() {
             {enrollments.map((e) => (
               <div
                 key={e.id}
-                style={{ padding: "12px 0", borderBottom: "1px solid #F1F5F9" }}
+                style={{ padding: "12px 0", borderBottom: "1px solid var(--token-color-palette-neutral-100)" }}
               >
                 <div className="flex justify-between items-center mb-2">
                   <span style={{ fontWeight: 600, fontSize: 14 }}>
@@ -240,18 +240,18 @@ export function StudentProgress() {
 export function StudentBadges() {
   const { state } = useApp();
   const { user, lang } = state;
-  const [enrollments, setEnrollments] = useState([]);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) fetchCompleted();
+    if (user?.id) fetchCertificates();
   }, [user?.id]);
 
-  const fetchCompleted = async () => {
+  const fetchCertificates = async () => {
     setLoading(true);
     try {
-      const data = await getStudentEnrollments(user.id);
-      setEnrollments(data.filter((e) => (e.progress || 0) >= 100));
+      const data = await getStudentCertificates(user.id);
+      setCertificates(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -274,10 +274,10 @@ export function StudentBadges() {
 
       {loading ? (
         <Spinner dark />
-      ) : enrollments.length === 0 ? (
+      ) : certificates.length === 0 ? (
         <div
           className="card"
-          style={{ textAlign: "center", padding: 60, color: "#64748B" }}
+          style={{ textAlign: "center", padding: 60, color: "var(--text-muted)" }}
         >
           <div style={{ fontSize: 48, marginBottom: 16 }}>🏆</div>
           <p>
@@ -288,35 +288,39 @@ export function StudentBadges() {
         </div>
       ) : (
         <div className="grid-3">
-          {enrollments.map((e) => (
+          {certificates.map((c) => (
             <div
-              key={e.id}
-              className="card flex flex-col items-center text-center p-6 bg-gradient-to-br from-white to-blue-50"
+              key={c.id}
+              className="card flex flex-col items-center text-center"
+              style={{
+                padding: 24,
+                background: "linear-gradient(135deg, var(--bg-card), var(--surface-blue))",
+              }}
             >
               <div
                 style={{
                   width: 80,
                   height: 80,
                   borderRadius: "50%",
-                  background: "#F0FDF4",
+                  background: "var(--surface-green)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 16,
-                  border: "4px solid #BBF7D0",
+                  border: "4px solid var(--surface-green-100)",
                 }}
               >
-                <Icon name="award" size={40} color="#10B981" />
+                <Icon name="award" size={40} color="var(--success)" />
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
-                {e.course?.title}
+                {c.course?.title}
               </h3>
               <Badge type="success">
                 {lang === "fr" ? "Certifié" : "Certified"}
               </Badge>
-              <div style={{ fontSize: 12, color: "#64748B", marginTop: 12 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12 }}>
                 {lang === "fr" ? "Obtenu le" : "Earned on"}{" "}
-                {new Date(e.updated_at || e.created_at).toLocaleDateString()}
+                {new Date(c.issued_at).toLocaleDateString()}
               </div>
             </div>
           ))}
@@ -336,6 +340,7 @@ export function StudentForum() {
 
   useEffect(() => {
     fetchPosts();
+    return subscribeToTable("forum_posts", null, fetchPosts);
   }, []);
 
   const fetchPosts = async () => {
@@ -423,11 +428,11 @@ export function StudentForum() {
                 <Avatar
                   initials={p.author?.avatar_url || "?"}
                   size={32}
-                  bg="#3B82F6"
+                  bg="var(--accent)"
                 />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
-                  <div style={{ fontSize: 12, color: "#64748B" }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     {p.author?.full_name} ·{" "}
                     {new Date(p.created_at).toLocaleDateString()}
                   </div>
@@ -437,10 +442,10 @@ export function StudentForum() {
                 )}
               </div>
             </div>
-            <p style={{ fontSize: 14, color: "#374151" }}>{p.content}</p>
+            <p style={{ fontSize: 14, color: "var(--primary-light)" }}>{p.content}</p>
             <div
               className="flex gap-4 mt-2"
-              style={{ fontSize: 12, color: "#94A3B8" }}
+              style={{ fontSize: 12, color: "var(--token-color-palette-neutral-400)" }}
             >
               <span>💬 {p.replies_count || 0}</span>
             </div>
@@ -463,7 +468,7 @@ export function StudentProfile() {
       <div className="grid-2">
         <div className="card">
           <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <Avatar initials={user?.avatar} size={72} bg="#10B981" />
+            <Avatar initials={user?.avatar} size={72} bg="var(--success)" />
             <div style={{ marginTop: 12, fontSize: 18, fontWeight: 600 }}>
               {user?.name}
             </div>
@@ -496,7 +501,7 @@ export function StudentProfile() {
         </div>
         <div className="card">
           <div className="card-title">🎓 {t[lang].myAchievements}</div>
-          <p style={{ color: "#64748B", fontSize: 14 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
             {lang === "fr"
               ? "Vos accomplissements seront bientôt synchronisés ici."
               : "Your achievements will be synced here soon."}

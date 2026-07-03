@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
-import { supabase } from "../services/supabase";
+import { supabase, subscribeToTable } from "../services/supabase";
+import { getNotifications } from "../services/db";
 
 export const AppContext = createContext(null);
 
@@ -46,6 +47,13 @@ function reducer(state, action) {
         ...state,
         notifications: state.notifications.map((n) => ({ ...n, read: true })),
       };
+    case "SET_NOTIFICATIONS":
+      return { ...state, notifications: action.payload };
+    case "ADD_NOTIFICATION":
+      return {
+        ...state,
+        notifications: [action.payload, ...state.notifications],
+      };
     default:
       return state;
   }
@@ -78,6 +86,25 @@ export function AppProvider({ children }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!state.user?.id) return;
+    const userId = state.user.id;
+
+    getNotifications(userId)
+      .then((data) => dispatch({ type: "SET_NOTIFICATIONS", payload: data }))
+      .catch((err) => console.error("Error fetching notifications:", err));
+
+    return subscribeToTable(
+      "notifications",
+      `user_id=eq.${userId}`,
+      (payload) => {
+        if (payload.eventType === "INSERT") {
+          dispatch({ type: "ADD_NOTIFICATION", payload: payload.new });
+        }
+      },
+    );
+  }, [state.user?.id]);
 
   useEffect(() => {
     const { user, lang, sidebarOpen } = state;

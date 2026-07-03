@@ -47,7 +47,7 @@ export default function AdminUsers() {
     suspended: "danger",
     inactive: "gray",
   };
-  const roleBg = { admin: "#1E3A5F", teacher: "#8B5CF6", student: "#10B981" };
+  const roleBg = { admin: "#1E3A5F", teacher: "var(--token-color-foreground-highlight-on-surface)", student: "var(--success)" };
 
   const addUser = async () => {
     alert(
@@ -167,7 +167,7 @@ export default function AdminUsers() {
                           <div style={{ fontWeight: 600, fontSize: 14 }}>
                             {u.full_name}
                           </div>
-                          <div style={{ fontSize: 12, color: "#64748B" }}>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                             {u.email}
                           </div>
                         </div>
@@ -191,7 +191,7 @@ export default function AdminUsers() {
                             : t[lang].inactive}
                       </Badge>
                     </td>
-                    <td style={{ fontSize: 13, color: "#64748B" }}>
+                    <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td>
@@ -215,7 +215,7 @@ export default function AdminUsers() {
                           title={t[lang].delete}
                           onClick={() => handleDelete(u.id)}
                         >
-                          <Icon name="trash" size={15} color="#EF4444" />
+                          <Icon name="trash" size={15} color="var(--danger)" />
                         </button>
                       </div>
                     </td>
@@ -232,7 +232,7 @@ export default function AdminUsers() {
         onClose={() => setModal(false)}
         title={lang === "fr" ? "Ajouter un utilisateur" : "Add User"}
       >
-        <div style={{ marginBottom: 15, fontSize: 13, color: "#64748B" }}>
+        <div style={{ marginBottom: 15, fontSize: 13, color: "var(--text-muted)" }}>
           {" "}
           {lang === "fr"
             ? "Note : Le système utilise Supabase Auth. Les utilisateurs doivent être enregistrés via un formulaire d'inscription pour avoir un mot de passe."

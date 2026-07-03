@@ -9,7 +9,8 @@ import {
   Badge,
   Spinner,
 } from "../../components/UI";
-import { getCourses, getStudentCourses } from "../../services/db";
+import { getCourses, getStudentCourses, getStudentBadgeStats } from "../../services/db";
+import { subscribeToTable } from "../../services/supabase";
 import t from "../../data/translations";
 
 export function StudentDashboard() {
@@ -17,6 +18,7 @@ export function StudentDashboard() {
   const { user, lang } = state;
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState([]);
+  const [badgeStats, setBadgeStats] = useState({ badges: 0, certificates: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,8 +28,12 @@ export function StudentDashboard() {
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const data = await getStudentCourses(user.id);
+      const [data, stats] = await Promise.all([
+        getStudentCourses(user.id),
+        getStudentBadgeStats(user.id),
+      ]);
       setEnrollments(data);
+      setBadgeStats(stats);
     } catch (err) {
       console.error("Error fetching student dashboard:", err);
     } finally {
@@ -52,7 +58,7 @@ export function StudentDashboard() {
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             {t[lang].welcome}, {user?.name}{" "}
-            <Icon name="wave" size={14} color="#F59E0B" />
+            <Icon name="wave" size={14} color="var(--warning)" />
           </p>
         </div>
         <button
@@ -65,28 +71,28 @@ export function StudentDashboard() {
 
       <div className="grid-4 mb-6">
         <StatCard
-          icon={<Icon name="bookOpen" size={24} color="#3B82F6" />}
+          icon={<Icon name="bookOpen" size={24} color="var(--accent)" />}
           label={t[lang].inProgress}
           value={inProgress.length}
-          bg="#EFF6FF"
+          bg="var(--surface-blue)"
         />
         <StatCard
-          icon={<Icon name="checkCircle" size={24} color="#10B981" />}
+          icon={<Icon name="checkCircle" size={24} color="var(--success)" />}
           label={t[lang].completed}
           value={completed.length}
-          bg="#F0FDF4"
+          bg="var(--surface-green)"
         />
         <StatCard
-          icon={<Icon name="award" size={24} color="#F59E0B" />}
+          icon={<Icon name="award" size={24} color="var(--warning)" />}
           label={t[lang].badges}
-          value="0"
-          bg="#FEF3C7"
+          value={loading ? "..." : badgeStats.badges}
+          bg="var(--surface-amber-100)"
         />
         <StatCard
-          icon={<Icon name="scroll" size={24} color="#A855F7" />}
+          icon={<Icon name="scroll" size={24} color="var(--token-color-foreground-highlight)" />}
           label={t[lang].certificates}
-          value="0"
-          bg="#FDF4FF"
+          value={loading ? "..." : badgeStats.certificates}
+          bg="var(--surface-purple)"
         />
       </div>
 
@@ -104,7 +110,7 @@ export function StudentDashboard() {
           {loading ? (
             <Spinner dark />
           ) : inProgress.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#64748B", padding: 20 }}>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", padding: 20 }}>
               {lang === "fr"
                 ? "Aucun cours en cours"
                 : "No courses in progress"}
@@ -116,7 +122,7 @@ export function StudentDashboard() {
                 className="flex items-center gap-3"
                 style={{
                   padding: 12,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   marginBottom: 8,
                   cursor: "pointer",
@@ -124,7 +130,7 @@ export function StudentDashboard() {
                 }}
                 onClick={() => navigate(`/student/learn/${e.course_id}`)}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#F8FAFC")
+                  (e.currentTarget.style.background = "var(--bg)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background = "transparent")
@@ -142,15 +148,15 @@ export function StudentDashboard() {
                     {e.course?.title}
                   </div>
                   <ProgressBar value={e.progress || 0} />
-                  <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                     {e.progress || 0}%{" "}
                     {lang === "fr" ? "complété" : "completed"}
                   </div>
                 </div>
                 <button
                   className="btn btn-accent btn-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(ev) => {
+                    ev.stopPropagation();
                     navigate(`/student/learn/${e.course_id}`);
                   }}
                 >
@@ -165,7 +171,7 @@ export function StudentDashboard() {
           <div className="card-title">
             🏅 {lang === "fr" ? "Mes badges récents" : "Recent Badges"}
           </div>
-          <p style={{ textAlign: "center", color: "#64748B", padding: 20 }}>
+          <p style={{ textAlign: "center", color: "var(--text-muted)", padding: 20 }}>
             {lang === "fr" ? "Bientôt disponible" : "Coming soon"}
           </p>
           <button
@@ -192,6 +198,7 @@ export function StudentCatalog() {
 
   useEffect(() => {
     fetchCatalog();
+    return subscribeToTable("courses", null, fetchCatalog);
   }, []);
 
   const fetchCatalog = async () => {
@@ -285,7 +292,7 @@ export function StudentCatalog() {
                   <span>👥 {c.enrolled_count || 0}</span>
                 </div>
                 <div className="flex justify-between items-center mt-2">
-                  <span style={{ fontSize: 12, color: "#64748B" }}>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     {lang === "fr" ? "Par" : "By"} {c.teacherName}
                   </span>
                   <button

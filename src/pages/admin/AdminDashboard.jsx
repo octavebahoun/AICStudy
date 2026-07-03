@@ -83,28 +83,28 @@ export default function AdminDashboard() {
           label={t[lang].totalStudents}
           value={loading ? "..." : dbStats.totalStudents}
           trend="+0"
-          bg="#EFF6FF"
+          bg="var(--surface-blue)"
         />
         <StatCard
           icon="📚"
           label={t[lang].totalCourses}
           value={loading ? "..." : dbStats.totalCourses}
           trend="+0"
-          bg="#F0FDF4"
+          bg="var(--surface-green)"
         />
         <StatCard
           icon="✅"
           label={t[lang].activeCourses}
           value={loading ? "..." : dbStats.activeCourses}
           trend="stable"
-          bg="#FEF3C7"
+          bg="var(--surface-amber-100)"
         />
         <StatCard
           icon="🎯"
           label={t[lang].completionRate}
           value={loading ? "..." : dbStats.completionRate + "%"}
           trend="+0%"
-          bg="#FDF4FF"
+          bg="var(--surface-purple)"
         />
       </div>
 
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
                   <div
                     title={`Complétions: ${d.completions}`}
                     style={{
-                      background: "#10B981",
+                      background: "var(--success)",
                       borderRadius: "3px 3px 0 0",
                       height: `${(d.completions / maxVal) * 100}%`,
                       opacity: 0.7,
@@ -152,14 +152,14 @@ export default function AdminDashboard() {
                   <div
                     title={`Inscrits: ${d.students}`}
                     style={{
-                      background: "#3B82F6",
+                      background: "var(--accent)",
                       borderRadius: "3px 3px 0 0",
                       height: `${(d.students / maxVal) * 80}%`,
                       opacity: 0.8,
                     }}
                   />
                 </div>
-                <div style={{ fontSize: 10, color: "#94A3B8" }}>{d.month}</div>
+                <div style={{ fontSize: 10, color: "var(--token-color-palette-neutral-400)" }}>{d.month}</div>
               </div>
             ))}
           </div>
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
           {loading ? (
             <Spinner dark />
           ) : topCourses.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#64748B", padding: 20 }}>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", padding: 20 }}>
               {lang === "fr" ? "Aucun cours actif" : "No active courses"}
             </p>
           ) : (
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
                       {c.title}
                     </span>
                   </div>
-                  <span style={{ fontSize: 13, color: "#64748B" }}>
+                  <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
                     {c.completion_rate || 0}%
                   </span>
                 </div>
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
               style={{
                 padding: "20px",
                 textAlign: "center",
-                color: "#64748B",
+                color: "var(--text-muted)",
                 fontSize: 14,
               }}
             >
@@ -222,14 +222,14 @@ export default function AdminDashboard() {
                 className="flex items-center justify-between"
                 style={{
                   padding: 12,
-                  background: "#FEF3C7",
+                  background: "var(--surface-amber-100)",
                   borderRadius: 8,
                   marginBottom: 8,
                 }}
               >
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{c.title}</div>
-                  <div style={{ fontSize: 12, color: "#92400E" }}>
+                  <div style={{ fontSize: 12, color: "var(--token-color-foreground-warning-high-contrast)" }}>
                     {c.teacherName}
                   </div>
                 </div>
@@ -253,8 +253,8 @@ export default function AdminDashboard() {
               style={{
                 fontSize: 14,
                 lineHeight: 1.7,
-                color: "#374151",
-                background: "#F8FAFC",
+                color: "var(--primary-light)",
+                background: "var(--bg)",
                 padding: 14,
                 borderRadius: 8,
               }}
@@ -268,7 +268,7 @@ export default function AdminDashboard() {
               actionLabel={t[lang].generateReport}
               loading={aiLoading}
             >
-              <p style={{ fontSize: 13, color: "#1E40AF" }}>
+              <p style={{ fontSize: 13, color: "var(--token-color-foreground-action-active)" }}>
                 {lang === "fr"
                   ? "Analysez les performances de votre plateforme avec l'IA."
                   : "Analyze your platform performance with AI."}

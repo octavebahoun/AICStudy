@@ -10,6 +10,7 @@ import {
   Spinner,
 } from "../../components/UI";
 import { getTeacherDashboardData } from "../../services/db";
+import { subscribeToTable } from "../../services/supabase";
 import t from "../../data/translations";
 
 export default function TeacherDashboard() {
@@ -21,7 +22,14 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) fetchDashboard();
+    if (!user?.id) return;
+    fetchDashboard();
+    const unsubCourses = subscribeToTable("courses", `teacher_id=eq.${user.id}`, fetchDashboard);
+    const unsubEnrollments = subscribeToTable("enrollments", null, fetchDashboard);
+    return () => {
+      unsubCourses();
+      unsubEnrollments();
+    };
   }, [user?.id]);
 
   const fetchDashboard = async () => {
@@ -58,7 +66,7 @@ export default function TeacherDashboard() {
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             {t[lang].welcome}, {user?.name}{" "}
-            <Icon name="wave" size={14} color="#F59E0B" />
+            <Icon name="wave" size={14} color="var(--warning)" />
           </p>
         </div>
         <button
@@ -71,32 +79,32 @@ export default function TeacherDashboard() {
 
       <div className="grid-4 mb-6">
         <StatCard
-          icon={<Icon name="book" size={24} color="#3B82F6" />}
+          icon={<Icon name="book" size={24} color="var(--accent)" />}
           label={t[lang].myCourses}
           value={loading ? "..." : courses.length}
-          bg="#EFF6FF"
+          bg="var(--surface-blue)"
         />
         <StatCard
-          icon={<Icon name="users" size={24} color="#10B981" />}
+          icon={<Icon name="users" size={24} color="var(--success)" />}
           label={t[lang].totalStudents}
           value={loading ? "..." : totalStudents}
-          bg="#F0FDF4"
+          bg="var(--surface-green)"
         />
         <StatCard
-          icon={<Icon name="trending" size={24} color="#F59E0B" />}
+          icon={<Icon name="trending" size={24} color="var(--warning)" />}
           label={t[lang].completionRate}
           value={loading ? "..." : `${avgCompletion}%`}
-          bg="#FEF3C7"
+          bg="var(--surface-amber-100)"
         />
         <StatCard
-          icon={<Icon name="folders" size={24} color="#A855F7" />}
+          icon={<Icon name="folders" size={24} color="var(--token-color-foreground-highlight)" />}
           label={t[lang].modules}
           value={
             loading
               ? "..."
               : courses.reduce((a, c) => a + (c.modules_count || 0), 0)
           }
-          bg="#FDF4FF"
+          bg="var(--surface-purple)"
         />
       </div>
 
@@ -114,7 +122,7 @@ export default function TeacherDashboard() {
           {loading ? (
             <Spinner dark />
           ) : courses.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#64748B", padding: 20 }}>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", padding: 20 }}>
               {lang === "fr" ? "Aucun cours créé" : "No courses created"}
             </p>
           ) : (
@@ -126,13 +134,13 @@ export default function TeacherDashboard() {
                   padding: "10px",
                   borderRadius: 8,
                   marginBottom: 8,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid var(--border)",
                   cursor: "pointer",
                   transition: "background 0.15s",
                 }}
                 onClick={() => navigate(`/teacher/courses/${c.id}`)}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#F8FAFC")
+                  (e.currentTarget.style.background = "var(--bg)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background = "transparent")
@@ -140,7 +148,7 @@ export default function TeacherDashboard() {
               >
                 <CourseThumb
                   thumbnail={c.thumbnail || "??"}
-                  color={c.color || "#3B82F6"}
+                  color={c.color || "var(--accent)"}
                   size={40}
                 />
                 <div style={{ flex: 1 }}>
@@ -153,7 +161,7 @@ export default function TeacherDashboard() {
                     </Badge>
                   </div>
                   <ProgressBar value={c.completion_rate || 0} />
-                  <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                     {c.enrolled_count || 0}{" "}
                     {lang === "fr" ? "inscrits" : "enrolled"} ·{" "}
                     {c.completion_rate || 0}%
@@ -179,7 +187,7 @@ export default function TeacherDashboard() {
           {loading ? (
             <Spinner dark />
           ) : posts.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#64748B", padding: 20 }}>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", padding: 20 }}>
               {lang === "fr"
                 ? "Aucune discussion récente"
                 : "No recent discussions"}
@@ -192,13 +200,13 @@ export default function TeacherDashboard() {
                   padding: "10px",
                   borderRadius: 8,
                   marginBottom: 8,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid var(--border)",
                   cursor: "pointer",
                 }}
                 onClick={() => navigate("/teacher/forum")}
               >
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
-                <div style={{ fontSize: 12, color: "#64748B" }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                   {p.author?.full_name} · 💬 {p.replies_count || 0}
                 </div>
               </div>

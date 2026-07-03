@@ -217,7 +217,7 @@ export default function Sidebar() {
                   <Icon
                     name={item.icon}
                     size={18}
-                    color={active ? "#3B82F6" : "#94A3B8"}
+                    color={active ? "var(--accent)" : "var(--token-color-palette-neutral-400)"}
                   />
                 </span>
                 {(sidebarOpen || mobileSidebarOpen) && (
@@ -236,7 +236,7 @@ export default function Sidebar() {
             onClick={() => dispatch({ type: "LOGOUT" })}
           >
             <span className="nav-icon">
-              <Icon name="logout" size={18} color="#94A3B8" />
+              <Icon name="logout" size={18} color="var(--token-color-palette-neutral-400)" />
             </span>
             {(sidebarOpen || mobileSidebarOpen) && (
               <span className="nav-label">{t[lang].logout}</span>

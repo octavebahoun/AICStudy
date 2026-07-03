@@ -17,7 +17,7 @@ import {
   getCourseDetails,
 } from "../../services/db";
 import { callAI, aiPrompts } from "../../services/ai";
-import { supabase } from "../../services/supabase";
+import { supabase, subscribeToTable } from "../../services/supabase";
 import t from "../../data/translations";
 
 export function TeacherCourses() {
@@ -28,14 +28,16 @@ export function TeacherCourses() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) fetchCourses();
+    if (!user?.id) return;
+    fetchCourses();
+    return subscribeToTable("courses", `teacher_id=eq.${user.id}`, fetchCourses);
   }, [user?.id]);
 
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const data = await getCourses();
-      setMyCourses(data.filter((c) => c.teacher_id === user.id));
+      const data = await getCourses({ teacherId: user.id });
+      setMyCourses(data);
     } catch (err) {
       console.error("Error fetching teacher courses:", err);
     } finally {
@@ -77,7 +79,7 @@ export function TeacherCourses() {
               <div
                 className="course-thumb"
                 style={{
-                  background: `linear-gradient(135deg, ${c.color || "#3B82F6"}, ${c.color || "#3B82F6"}99)`,
+                  background: `linear-gradient(135deg, ${c.color || "var(--accent)"}, ${c.color || "var(--accent)"}99)`,
                 }}
               >
                 {c.thumbnail || "??"}
@@ -126,7 +128,7 @@ export function TeacherCourses() {
           <div
             className="course-card"
             style={{
-              border: "2px dashed #E2E8F0",
+              border: "2px dashed var(--border)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -135,8 +137,8 @@ export function TeacherCourses() {
             }}
             onClick={() => navigate("/teacher/courses/new")}
           >
-            <div style={{ textAlign: "center", color: "#94A3B8" }}>
-              <Icon name="plus" size={32} color="#94A3B8" />
+            <div style={{ textAlign: "center", color: "var(--token-color-palette-neutral-400)" }}>
+              <Icon name="plus" size={32} color="var(--token-color-palette-neutral-400)" />
               <div style={{ marginTop: 8, fontSize: 14 }}>
                 {t[lang].createCourse}
               </div>
@@ -162,7 +164,7 @@ export function TeacherCourseEditor() {
     level: "beginner",
     duration: "",
     thumbnail: "",
-    color: "#3B82F6",
+    color: "var(--accent)",
   });
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -195,7 +197,7 @@ export function TeacherCourseEditor() {
         level: data.level || "beginner",
         duration: data.duration || "",
         thumbnail: data.thumbnail || "",
-        color: data.color || "#3B82F6",
+        color: data.color || "var(--accent)",
       });
       setModules(data.modules || []);
     } catch (err) {
@@ -512,9 +514,9 @@ export function TeacherCourseEditor() {
         <div
           className="card mb-4"
           style={{
-            color: "#EF4444",
-            background: "#FEE2E2",
-            border: "1px solid #FCA5A5",
+            color: "var(--danger)",
+            background: "var(--surface-red-100)",
+            border: "1px solid var(--surface-red-100)",
           }}
         >
           {error}
@@ -637,7 +639,7 @@ export function TeacherCourseEditor() {
                 <button
                   type="button"
                   className="btn btn-ghost"
-                  style={{ color: "#EF4444" }}
+                  style={{ color: "var(--danger)" }}
                   onClick={handleDeleteCourse}
                 >
                   <Icon name="trash" size={15} />
@@ -669,7 +671,7 @@ export function TeacherCourseEditor() {
                   {lang === "fr" ? "Gérer le quiz" : "Manage quiz"}
                 </button>
               </div>
-              <p style={{ fontSize: 13, color: "#64748B" }}>
+              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 {lang === "fr"
                   ? "Définissez les questions et le score minimum pour valider le cours."
                   : "Define questions and passing score to validate the course."}
@@ -706,7 +708,7 @@ export function TeacherCourseEditor() {
                 <p
                   style={{
                     textAlign: "center",
-                    color: "#94A3B8",
+                    color: "var(--token-color-palette-neutral-400)",
                     padding: 20,
                     fontSize: 13,
                   }}
@@ -720,7 +722,7 @@ export function TeacherCourseEditor() {
                   <div
                     key={m.id}
                     style={{
-                      border: "1px solid #E2E8F0",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
                       padding: "12px 16px",
                       marginBottom: 12,
@@ -733,7 +735,7 @@ export function TeacherCourseEditor() {
                         style={{
                           fontWeight: 600,
                           fontSize: 14,
-                          color: "#1E293B",
+                          color: "var(--primary-light)",
                         }}
                       >
                         {m.title}
@@ -769,7 +771,7 @@ export function TeacherCourseEditor() {
                           className="btn-icon"
                           onClick={() => handleDeleteModule(m.id)}
                         >
-                          <Icon name="trash" size={14} color="#EF4444" />
+                          <Icon name="trash" size={14} color="var(--danger)" />
                         </button>
                       </div>
                     </div>
@@ -778,7 +780,7 @@ export function TeacherCourseEditor() {
                     <div
                       style={{
                         marginLeft: 12,
-                        borderLeft: "2px solid #F1F5F9",
+                        borderLeft: "2px solid var(--token-color-palette-neutral-100)",
                         paddingLeft: 12,
                       }}
                     >
@@ -786,7 +788,7 @@ export function TeacherCourseEditor() {
                         <div
                           style={{
                             fontSize: 12,
-                            color: "#94A3B8",
+                            color: "var(--token-color-palette-neutral-400)",
                             fontStyle: "italic",
                           }}
                         >
@@ -798,7 +800,7 @@ export function TeacherCourseEditor() {
                             key={l.id}
                             className="flex justify-between items-center py-1 group"
                           >
-                            <span style={{ fontSize: 13, color: "#475569" }}>
+                            <span style={{ fontSize: 13, color: "var(--primary-light)" }}>
                               {l.type === "video" ? "📹" : "📄"} {l.title}
                             </span>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100">
@@ -818,7 +820,7 @@ export function TeacherCourseEditor() {
                                 style={{ padding: 2 }}
                                 onClick={() => handleDeleteLesson(l.id, m.id)}
                               >
-                                <Icon name="trash" size={12} color="#EF4444" />
+                                <Icon name="trash" size={12} color="var(--danger)" />
                               </button>
                             </div>
                           </div>
@@ -985,7 +987,7 @@ export function TeacherCourseEditor() {
             actionLabel={t[lang].generatePlan}
             loading={aiLoading}
           >
-            <p style={{ fontSize: 13, color: "#1E40AF" }}>
+            <p style={{ fontSize: 13, color: "var(--token-color-foreground-action-active)" }}>
               {lang === "fr"
                 ? "Entrez un titre pour générer un plan structuré."
                 : "Enter a title to generate a structured plan."}
@@ -1003,12 +1005,12 @@ export function TeacherCourseEditor() {
                   style={{
                     fontSize: 13,
                     lineHeight: 1.7,
-                    color: "#374151",
+                    color: "var(--primary-light)",
                     background: "white",
                     padding: 12,
                     borderRadius: 8,
                     whiteSpace: "pre-wrap",
-                    border: "1px solid #DBEAFE",
+                    border: "1px solid var(--surface-blue-100)",
                   }}
                 >
                   {aiPlan}

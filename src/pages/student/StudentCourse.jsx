@@ -115,7 +115,7 @@ export function StudentCourseDetail() {
                 width: "100%",
                 height: 160,
                 borderRadius: 8,
-                background: `linear-gradient(135deg, ${course.color || "#3B82F6"}, ${course.color || "#3B82F6"}99)`,
+                background: `linear-gradient(135deg, ${course.color || "var(--accent)"}, ${course.color || "var(--accent)"}99)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -134,7 +134,7 @@ export function StudentCourseDetail() {
             <p
               style={{
                 fontSize: 14,
-                color: "#64748B",
+                color: "var(--text-muted)",
                 marginBottom: 16,
                 lineHeight: 1.6,
               }}
@@ -146,10 +146,10 @@ export function StudentCourseDetail() {
                 {t[lang][course.level]}
               </Badge>
               <Badge type="info">{course.category}</Badge>
-              <span style={{ fontSize: 13, color: "#64748B" }}>
+              <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 ⏱ {course.duration}
               </span>
-              <span style={{ fontSize: 13, color: "#64748B" }}>
+              <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 📚 {modules.length} {t[lang].modules}
               </span>
             </div>
@@ -173,7 +173,7 @@ export function StudentCourseDetail() {
         <div className="card">
           <div className="card-title">📚 {t[lang].courseContent}</div>
           {modules.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#64748B" }}>
+            <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>
               {lang === "fr"
                 ? "Contenu bientôt disponible"
                 : "Content coming soon"}
@@ -187,10 +187,10 @@ export function StudentCourseDetail() {
                     style={{
                       fontWeight: 600,
                       fontSize: 13,
-                      color: "#1E293B",
+                      color: "var(--primary-light)",
                       marginBottom: 6,
                       padding: "7px 10px",
-                      background: "#F8FAFC",
+                      background: "var(--bg)",
                       borderRadius: 6,
                     }}
                   >
@@ -211,7 +211,7 @@ export function StudentCourseDetail() {
                           cursor: "pointer",
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = "#F8FAFC")
+                          (e.currentTarget.style.background = "var(--bg)")
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.background = "transparent")
@@ -223,7 +223,7 @@ export function StudentCourseDetail() {
                             width: 20,
                             height: 20,
                             borderRadius: "50%",
-                            background: l.completed ? "#10B981" : "#E2E8F0",
+                            background: l.completed ? "var(--success)" : "var(--border)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -238,7 +238,7 @@ export function StudentCourseDetail() {
                         <span
                           style={{
                             fontSize: 11,
-                            color: "#94A3B8",
+                            color: "var(--token-color-palette-neutral-400)",
                             marginLeft: "auto",
                           }}
                         >
@@ -253,7 +253,7 @@ export function StudentCourseDetail() {
             <div
               style={{
                 padding: "12px",
-                borderTop: "1px solid #E2E8F0",
+                borderTop: "1px solid var(--border)",
                 marginTop: 16,
               }}
               onClick={() => navigate(`/student/quiz/${course.id}`)}
@@ -264,7 +264,7 @@ export function StudentCourseDetail() {
                   width: 20,
                   height: 20,
                   borderRadius: "50%",
-                  background: "#8B5CF6",
+                  background: "var(--token-color-foreground-highlight-on-surface)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -280,7 +280,7 @@ export function StudentCourseDetail() {
               <Icon
                 name="chevronRight"
                 size={14}
-                color="#8B5CF6"
+                color="var(--token-color-foreground-highlight-on-surface)"
                 style={{ marginLeft: "auto" }}
               />
             </div>
@@ -473,7 +473,7 @@ export function StudentCourseReader() {
           <div className="card mb-4">
             <div
               style={{
-                background: `linear-gradient(135deg, ${course.color || "#3B82F6"}20, ${course.color || "#3B82F6"}10)`,
+                background: `linear-gradient(135deg, ${course.color || "var(--accent)"}20, ${course.color || "var(--accent)"}10)`,
                 borderRadius: 8,
                 padding: "32px",
                 textAlign: "center",
@@ -528,7 +528,7 @@ export function StudentCourseReader() {
                   {activeLesson.content}
                 </ReactMarkdown>
               ) : (
-                <p style={{ color: "#94A3B8", fontStyle: "italic" }}>
+                <p style={{ color: "var(--token-color-palette-neutral-400)", fontStyle: "italic" }}>
                   {lang === "fr"
                     ? "Contenu de la leçon en attente."
                     : "Lesson content pending."}
@@ -591,7 +591,7 @@ export function StudentCourseReader() {
                 style={{
                   fontSize: 14,
                   lineHeight: 1.7,
-                  color: "#374151",
+                  color: "var(--primary-light)",
                   whiteSpace: "pre-wrap",
                 }}
               >
@@ -608,7 +608,7 @@ export function StudentCourseReader() {
             actionLabel={t[lang].summarize}
             loading={summaryLoading}
           >
-            <p style={{ fontSize: 13, color: "#1E40AF" }}>
+            <p style={{ fontSize: 13, color: "var(--token-color-foreground-action-active)" }}>
               {lang === "fr"
                 ? "Obtenez les points clés de cette leçon."
                 : "Get the key points of this lesson."}
@@ -627,7 +627,7 @@ export function StudentCourseReader() {
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "#94A3B8",
+                      color: "var(--token-color-palette-neutral-400)",
                       textTransform: "uppercase",
                       letterSpacing: "0.5px",
                       marginBottom: 4,
@@ -661,7 +661,7 @@ export function StudentCourseReader() {
                         <span
                           style={{
                             fontSize: 11,
-                            color: "#94A3B8",
+                            color: "var(--token-color-palette-neutral-400)",
                             marginLeft: "auto",
                           }}
                         >
@@ -675,7 +675,7 @@ export function StudentCourseReader() {
               <div
                 className="lesson-item mt-4"
                 style={{
-                  background: "#8B5CF615",
+                  background: "var(--token-color-foreground-highlight-on-surface)15",
                   borderRadius: 8,
                   padding: "10px 12px",
                 }}
@@ -686,7 +686,7 @@ export function StudentCourseReader() {
                     width: 22,
                     height: 22,
                     borderRadius: "50%",
-                    background: "#8B5CF6",
+                    background: "var(--token-color-foreground-highlight-on-surface)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -695,14 +695,14 @@ export function StudentCourseReader() {
                   <Icon name="quiz" size={12} color="white" />
                 </div>
                 <span
-                  style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--primary-light)" }}
                 >
                   {lang === "fr" ? "Quiz final" : "Final Quiz"}
                 </span>
                 <Icon
                   name="chevronRight"
                   size={15}
-                  color="#8B5CF6"
+                  color="var(--token-color-foreground-highlight-on-surface)"
                   style={{ marginLeft: "auto" }}
                 />
               </div>
